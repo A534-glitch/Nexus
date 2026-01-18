@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, Story, Comment, User } from '../types';
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, X, Link as LinkIcon, Sparkles, Plus, GraduationCap, User as UserIcon, Bell, Smile, Copy, Check, Search, ChevronRight, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, X, Link as LinkIcon, Sparkles, Plus, GraduationCap, User as UserIcon, Bell, Smile, Copy, Check, Search, ChevronRight, Trash2, AlertTriangle, UserPlus, UserCheck } from 'lucide-react';
 
 interface FeedViewProps {
   currentUser: User;
@@ -15,20 +15,20 @@ interface FeedViewProps {
   onDeleteStory: (id: string) => void;
   onNavigateToChat: () => void;
   onNavigateToNotifications: () => void;
+  onNavigateToUserProfile: (user: User) => void;
   onAddStoryClick: () => void;
 }
 
 const MOCK_ACCOUNTS: User[] = [
-  { id: 'u101', name: 'Arjun Mehra', avatar: 'https://picsum.photos/seed/arjunm/100', college: 'IIT Delhi', isVerified: true },
-  { id: 'u102', name: 'Priya Sharma', avatar: 'https://picsum.photos/seed/priyas/100', college: 'SRCC Delhi', isVerified: true },
-  { id: 'u103', name: 'Rohan Gupta', avatar: 'https://picsum.photos/seed/rohang/100', college: 'BITS Pilani', isVerified: false },
-  { id: 'u104', name: 'Sana Varma', avatar: 'https://picsum.photos/seed/sanav/100', college: 'VIT Vellore', isVerified: true },
-  { id: 'u105', name: 'Ishaan Khattar', avatar: 'https://picsum.photos/seed/ishaan/100', college: 'Delhi University', isVerified: false },
-  { id: 'u106', name: 'Ananya Pandey', avatar: 'https://picsum.photos/seed/ananya/100', college: 'NIFT Mumbai', isVerified: true },
+  { id: 'u101', name: 'Arjun Mehra', avatar: 'https://picsum.photos/seed/arjunm/100', college: 'IIT Delhi', isVerified: true, bio: "Tech enthusiast. Selling my old gear to fund my next build. 💻", followers: 450, following: 320 },
+  { id: 'user2', name: 'Priya Patel', avatar: 'https://picsum.photos/seed/Priya/100', college: 'SRCC Delhi', isVerified: true, bio: "Economics major. Finding new homes for my library of notes. 📚", followers: 1200, following: 800 },
+  { id: 'user3', name: 'Rahul Varma', avatar: 'https://picsum.photos/seed/Rahul/100', college: 'BITS Pilani', isVerified: false, bio: "Music and Marketing. 🎸", followers: 150, following: 140 },
+  { id: 'u104', name: 'Sana Varma', avatar: 'https://picsum.photos/seed/sanav/100', college: 'VIT Vellore', isVerified: true, bio: "Design student. Minimalism is the key. ✨", followers: 890, following: 400 },
+  { id: 'u105', name: 'Ishaan Khattar', avatar: 'https://picsum.photos/seed/ishaan/100', college: 'Delhi University', isVerified: false, bio: "Sports & History. 🏟️", followers: 310, following: 290 },
+  { id: 'u106', name: 'Ananya Pandey', avatar: 'https://picsum.photos/seed/ananya/100', college: 'NIFT Mumbai', isVerified: true, bio: "Fashion & Lifestyle. 👗 Sharing my curated collection.", followers: 2400, following: 500 },
 ];
 
 const ShareSheet = ({ product, onClose }: { product: Product, onClose: () => void }) => {
-  const [copied, setCopied] = useState(false);
   const shareUrl = window.location.origin;
   const shareText = `Check out this ${product.title} for ₹${product.price} on Nexus! 🚀`;
 
@@ -43,7 +43,7 @@ const ShareSheet = ({ product, onClose }: { product: Product, onClose: () => voi
       name: 'Instagram', 
       color: '#E4405F', 
       icon: <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4.162 4.162 0 110-8.324A4.162 4.162 0 0112 16zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>,
-      action: () => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+      action: () => { navigator.clipboard.writeText(shareUrl); }
     }
   ];
 
@@ -189,12 +189,13 @@ const StoriesBar = ({ stories, onSelectStory, onAddStoryClick }: { stories: Stor
   );
 };
 
-const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onLike, onLikeStory, onComment, onShare, onDeleteProduct, onDeleteStory, onNavigateToChat, onNavigateToNotifications, onAddStoryClick }) => {
+const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onLike, onLikeStory, onComment, onShare, onDeleteProduct, onDeleteStory, onNavigateToChat, onNavigateToNotifications, onNavigateToUserProfile, onAddStoryClick }) => {
   const [activeCommentProductId, setActiveCommentProductId] = useState<string | null>(null);
   const [activeShareProductId, setActiveShareProductId] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   const activeCommentProduct = products.find(p => p.id === activeCommentProductId);
   const activeShareProduct = products.find(p => p.id === activeShareProductId);
@@ -210,6 +211,31 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         p.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
+
+  const toggleFollow = (id: string) => {
+    setFollowingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleUserClick = (userId: string, userName: string) => {
+    // Attempt to find full user data in MOCK_ACCOUNTS first
+    const foundUser = MOCK_ACCOUNTS.find(u => u.id === userId);
+    if (foundUser) {
+      onNavigateToUserProfile(foundUser);
+    } else {
+      // Fallback: Create minimal user object if not in mock accounts
+      onNavigateToUserProfile({
+        id: userId,
+        name: userName,
+        avatar: `https://picsum.photos/seed/${userName}/100`,
+        college: 'Campus Member'
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col bg-[#fafafa] min-h-full pb-32">
@@ -262,6 +288,7 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
                 onComment={setActiveCommentProductId} 
                 onShare={setActiveShareProductId} 
                 onDelete={onDeleteProduct}
+                onUserClick={handleUserClick}
                 activeMenuId={activeMenuId}
                 setActiveMenuId={setActiveMenuId}
               />
@@ -283,22 +310,42 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
               <div className="space-y-3">
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map(student => (
-                    <div key={student.id} className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div 
+                      key={student.id} 
+                      onClick={() => onNavigateToUserProfile(student)}
+                      className="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between animate-in slide-in-from-bottom duration-300 cursor-pointer hover:bg-slate-50 active:scale-[0.98] transition-all"
+                    >
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm flex-shrink-0">
                            <img src={student.avatar} className="w-full h-full object-cover" alt="" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                            <div className="flex items-center space-x-1">
-                              <h4 className="text-sm font-black text-slate-900 leading-tight">{student.name}</h4>
-                              {student.isVerified && <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center"><Check size={8} className="text-white" strokeWidth={4} /></div>}
+                              <h4 className="text-sm font-black text-slate-900 leading-tight truncate">{student.name}</h4>
+                              {student.isVerified && <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0"><Check size={8} className="text-white" strokeWidth={4} /></div>}
                            </div>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{student.college}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">{student.college}</p>
                         </div>
                       </div>
-                      <button onClick={onNavigateToChat} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
-                        <MessageCircle size={18} />
-                      </button>
+                      
+                      <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={() => toggleFollow(student.id)}
+                          className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-90 ${
+                            followingIds.has(student.id) 
+                              ? 'bg-slate-100 text-slate-600' 
+                              : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                          }`}
+                        >
+                          {followingIds.has(student.id) ? 'Following' : 'Follow'}
+                        </button>
+                        <button 
+                          onClick={onNavigateToChat} 
+                          className="p-2.5 bg-slate-50 text-slate-900 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors active:scale-90"
+                        >
+                          <MessageCircle size={18} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -325,6 +372,7 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
                     onComment={setActiveCommentProductId} 
                     onShare={setActiveShareProductId} 
                     onDelete={onDeleteProduct}
+                    onUserClick={handleUserClick}
                     activeMenuId={activeMenuId}
                     setActiveMenuId={setActiveMenuId}
                   />
@@ -345,20 +393,24 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
   );
 };
 
-// Extracted Subcomponent for cleaner code
-const PostCard = ({ product, currentUser, onLike, onComment, onShare, onDelete, activeMenuId, setActiveMenuId }: any) => {
+// Updated PostCard to include navigation triggers on user elements
+const PostCard = ({ product, currentUser, onLike, onComment, onShare, onDelete, onUserClick, activeMenuId, setActiveMenuId }: any) => {
   return (
     <div className="bg-white border-y border-slate-100 shadow-sm relative overflow-visible animate-in fade-in duration-500">
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 to-emerald-400">
+        {/* Clickable Header for Profile Navigation */}
+        <div 
+          className="flex items-center space-x-3 cursor-pointer group/user"
+          onClick={() => onUserClick(product.sellerId, product.sellerName)}
+        >
+          <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 to-emerald-400 group-active/user:scale-95 transition-transform">
             <div className="w-full h-full rounded-full bg-white p-[1px]">
               <img src={`https://picsum.photos/seed/${product.sellerName}/100`} className="w-full h-full rounded-full object-cover" alt="" />
             </div>
           </div>
           <div>
             <div className="flex items-center space-x-1">
-              <p className="text-[13px] font-black text-slate-900 leading-none">{product.sellerName}</p>
+              <p className="text-[13px] font-black text-slate-900 leading-none group-hover/user:text-indigo-600 transition-colors">{product.sellerName}</p>
               <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
                 <Check size={8} className="text-white" strokeWidth={4} />
               </div>
@@ -398,7 +450,15 @@ const PostCard = ({ product, currentUser, onLike, onComment, onShare, onDelete, 
         </div>
         <div className="space-y-1.5">
           <p className="text-sm font-black text-slate-900 tracking-tight">{product.likes.toLocaleString()} likes</p>
-          <p className="text-sm text-slate-800 leading-relaxed"><span className="font-black mr-2 text-slate-900">{product.sellerName.split(' ')[0]}</span><span className="font-medium text-slate-600">{product.description}</span></p>
+          <p className="text-sm text-slate-800 leading-relaxed">
+            <span 
+              className="font-black mr-2 text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors"
+              onClick={() => onUserClick(product.sellerId, product.sellerName)}
+            >
+              {product.sellerName.split(' ')[0]}
+            </span>
+            <span className="font-medium text-slate-600">{product.description}</span>
+          </p>
           {product.comments.length > 0 && <button onClick={() => onComment(product.id)} className="text-sm text-slate-400 font-bold block pt-1">View all {product.comments.length} comments</button>}
           <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest pt-1">2 hours ago</p>
         </div>

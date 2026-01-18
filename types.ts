@@ -7,6 +7,10 @@ export interface User {
   isVerified?: boolean;
   upiId?: string;
   aiEnabled?: boolean;
+  bio?: string;
+  followers?: number;
+  following?: number;
+  postsCount?: number;
 }
 
 export interface Product {
@@ -69,4 +73,4 @@ export interface Chat {
   isPinned?: boolean;
 }
 
-export type View = 'LOGIN' | 'FEED' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS';
+export type View = 'LOGIN' | 'FEED' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE';

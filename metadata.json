@@ -2,6 +2,7 @@
   "name": "Nexus - Student Marketplace",
   "description": "A professional peer-to-peer marketplace for students to buy, sell, and share notebooks, gadgets, and more, featuring AI-powered descriptions and intelligent bargaining.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }

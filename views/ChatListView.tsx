@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
 import { Search, Edit, Trash2, MoreHorizontal, GraduationCap, Pin } from 'lucide-react';
+import { User } from '../types';
 
 interface ChatListViewProps {
   onSelectChat: (id: string) => void;
+  onNavigateToUserProfile: (user: User) => void;
 }
 
-const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat }) => {
+const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat, onNavigateToUserProfile }) => {
   const [chats, setChats] = useState([
-    { id: '1', name: 'Priya Patel', last: 'Is the iPad still available?', time: '10:45 AM', unread: 2, isPinned: true },
-    { id: '2', name: 'Rahul Varma', last: 'Okay, lets meet at the library.', time: 'Yesterday', unread: 0, isPinned: false },
-    { id: '3', name: 'Sana Khan', last: 'The notes are really helpful!', time: 'Monday', unread: 0, isPinned: false },
+    { id: 'user2', name: 'Priya Patel', last: 'Is the iPad still available?', time: '10:45 AM', unread: 2, isPinned: true, college: 'SRCC Delhi' },
+    { id: 'user3', name: 'Rahul Varma', last: 'Okay, lets meet at the library.', time: 'Yesterday', unread: 0, isPinned: false, college: 'BITS Pilani' },
+    { id: 'u104', name: 'Sana Varma', last: 'The notes are really helpful!', time: 'Monday', unread: 0, isPinned: false, college: 'VIT Vellore' },
   ]);
 
   const handleDeleteChat = (e: React.MouseEvent, id: string) => {
@@ -23,6 +25,16 @@ const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat }) => {
   const togglePin = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setChats(prev => prev.map(c => c.id === id ? { ...c, isPinned: !c.isPinned } : c));
+  };
+
+  const handleAvatarClick = (e: React.MouseEvent, chat: any) => {
+    e.stopPropagation();
+    onNavigateToUserProfile({
+      id: chat.id,
+      name: chat.name,
+      avatar: `https://picsum.photos/seed/${chat.name}/100`,
+      college: chat.college
+    });
   };
 
   const sortedChats = [...chats].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
@@ -69,8 +81,8 @@ const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat }) => {
                 onClick={() => onSelectChat(chat.id)}
                 className="w-full flex items-center px-6 py-5 hover:bg-slate-50 transition-colors border-b border-slate-50"
               >
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 overflow-hidden shadow-sm">
+                <div className="relative" onClick={(e) => handleAvatarClick(e, chat)}>
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 overflow-hidden shadow-sm hover:scale-105 transition-transform active:scale-95">
                     <img src={`https://picsum.photos/seed/${chat.name}/100`} alt="" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
@@ -78,7 +90,7 @@ const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat }) => {
                 <div className="flex-1 ml-4 text-left">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-base font-bold text-slate-900">{chat.name}</h3>
+                      <h3 className="text-base font-bold text-slate-900 hover:text-indigo-600 transition-colors">{chat.name}</h3>
                       {chat.isPinned && <Pin size={12} className="text-indigo-600 rotate-45 fill-indigo-600" />}
                     </div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{chat.time}</span>

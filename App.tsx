@@ -12,6 +12,7 @@ import PaymentView from './views/PaymentView';
 import SettingsView from './views/SettingsView';
 import ProductListView from './views/ProductListView';
 import NotificationView from './views/NotificationView';
+import UserProfileView from './views/UserProfileView';
 import BottomNav from './components/BottomNav';
 
 const MOCK_USER: User = {
@@ -73,6 +74,7 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [viewedUser, setViewedUser] = useState<User | null>(null);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
   const [checkoutType, setCheckoutType] = useState<'BUY' | 'RENT'>('BUY');
   const [initialOffer, setInitialOffer] = useState<number | undefined>(undefined);
@@ -209,6 +211,11 @@ const App: React.FC = () => {
     setCurrentView('UPLOAD');
   };
 
+  const navigateToUserProfile = (user: User) => {
+    setViewedUser(user);
+    setCurrentView('USER_PROFILE');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'LOGIN': return <LoginView onLogin={handleLogin} />;
@@ -224,6 +231,7 @@ const App: React.FC = () => {
         onDeleteStory={handleDeleteStory}
         onNavigateToChat={() => setCurrentView('CHAT')}
         onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')}
+        onNavigateToUserProfile={navigateToUserProfile}
         onAddStoryClick={() => navigateToUpload('STORY')}
       />;
       case 'MARKET': return <MarketView 
@@ -247,8 +255,8 @@ const App: React.FC = () => {
           setCurrentView('PAYMENT');
         }}
       />;
-      case 'CHAT': return <ChatListView onSelectChat={(id) => { setSelectedChatId(id); setCurrentView('CHAT_DETAIL'); }} />;
-      case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} initialOffer={initialOffer} onBack={() => { setCurrentView('CHAT'); setInitialOffer(undefined); }} currentUser={currentUser!} />;
+      case 'CHAT': return <ChatListView onSelectChat={(id) => { setSelectedChatId(id); setCurrentView('CHAT_DETAIL'); }} onNavigateToUserProfile={navigateToUserProfile} />;
+      case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} initialOffer={initialOffer} onBack={() => { setCurrentView('CHAT'); setInitialOffer(undefined); }} currentUser={currentUser!} onNavigateToUserProfile={navigateToUserProfile} />;
       case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
       case 'PROFILE': return <ProfileView 
         user={currentUser!} 
@@ -279,7 +287,8 @@ const App: React.FC = () => {
         actionLabel="Edit"
       />;
       case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
-      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onAddStoryClick={() => navigateToUpload('STORY')} />;
+      case 'USER_PROFILE': return <UserProfileView user={viewedUser!} products={products} onBack={() => setCurrentView('FEED')} onNavigateToChat={() => setCurrentView('CHAT')} />;
+      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onNavigateToUserProfile={navigateToUserProfile} onAddStoryClick={() => navigateToUpload('STORY')} />;
     }
   };
 
