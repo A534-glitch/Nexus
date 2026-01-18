@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle } from 'lucide-react';
+import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle, ShieldCheck, MapPin, Scale, Ban, Lock, X } from 'lucide-react';
 import { analyzeProductImage } from '../services/gemini';
 import { Product, User, Story } from '../types';
 
@@ -11,6 +11,111 @@ interface UploadViewProps {
   initialType?: 'PRODUCT' | 'STORY';
 }
 
+interface SafetyModalProps {
+  onClose: () => void;
+  onConfirmAndUpload: () => void;
+  isFormValid: boolean;
+  postType: 'PRODUCT' | 'STORY';
+}
+
+const SafetyGuidelinesModal: React.FC<SafetyModalProps> = ({ onClose, onConfirmAndUpload, isFormValid, postType }) => {
+  const guidelines = [
+    {
+      icon: <ShieldCheck className="text-indigo-600" size={24} />,
+      title: "Verified Peers Only",
+      desc: "Nexus is a closed student network. Always verify the seller's college ID or 'Verified' badge before starting a bargain."
+    },
+    {
+      icon: <MapPin className="text-emerald-600" size={24} />,
+      title: "Public Meetups",
+      desc: "Always meet in crowded campus spots like the Library, Canteen, or Main Gate. Never invite strangers to your hostel room."
+    },
+    {
+      icon: <Scale className="text-amber-600" size={24} />,
+      title: "Fair Bargaining",
+      desc: "Use the AI Bargain tool for fair prices. Harassment, spamming, or low-balling verified student listings is strictly prohibited."
+    },
+    {
+      icon: <Ban className="text-rose-600" size={24} />,
+      title: "Prohibited Items",
+      desc: "Do not list alcohol, drugs, exam papers, or unauthorized digital keys. Violations result in immediate campus-wide bans."
+    },
+    {
+      icon: <Lock className="text-indigo-600" size={24} />,
+      title: "Secure Payment",
+      desc: "Inspect the item thoroughly before finalizing UPI transfers. Nexus recommends using the built-in UPI gateway for records."
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col justify-end animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-white w-full h-[85vh] rounded-t-[48px] shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-20">
+           <div className="flex items-center space-x-3">
+             <div className="p-2 bg-indigo-600 rounded-xl">
+               <ShieldCheck className="text-white" size={20} />
+             </div>
+             <h2 className="text-xl font-black text-slate-900 tracking-tight">Safety Guidelines</h2>
+           </div>
+           <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+             <X size={20} className="text-slate-900" />
+           </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8 hide-scrollbar">
+           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed text-center">
+             Ensuring a secure peer-to-peer ecosystem for every student.
+           </p>
+
+           <div className="space-y-6">
+              {guidelines.map((g, idx) => (
+                <div key={idx} className="flex space-x-5 animate-in slide-in-from-right duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
+                   <div className="flex-shrink-0 w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
+                      {g.icon}
+                   </div>
+                   <div className="space-y-1">
+                      <h3 className="text-base font-black text-slate-900">{g.title}</h3>
+                      <p className="text-sm text-slate-500 font-medium leading-relaxed">{g.desc}</p>
+                   </div>
+                </div>
+              ))}
+           </div>
+
+           <div className="bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 flex items-start space-x-4">
+              <AlertCircle size={20} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] font-bold text-indigo-700 leading-relaxed uppercase tracking-wide">
+                By clicking "Got it", you agree to the community rules. Your {postType === 'STORY' ? 'story' : 'product'} will be published immediately.
+              </p>
+           </div>
+        </div>
+
+        <div className="p-8 bg-white border-t border-slate-100">
+           <button 
+            onClick={() => {
+              if (isFormValid) {
+                onConfirmAndUpload();
+              } else {
+                onClose();
+              }
+            }}
+            className={`w-full py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-[0.98] transition-all flex items-center justify-center space-x-3 ${isFormValid ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-slate-900 text-white shadow-slate-200'}`}
+           >
+             {isFormValid ? (
+               <>
+                 <Check size={18} strokeWidth={3} />
+                 <span>Got it, I'll be safe (Post Now)</span>
+               </>
+             ) : (
+               <span>Got it, I'll be safe</span>
+             )}
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUser, initialType = 'PRODUCT' }) => {
   const [postType, setPostType] = useState<'PRODUCT' | 'STORY'>(initialType);
   const [image, setImage] = useState<string | null>(null);
@@ -19,6 +124,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState<'Notebook' | 'Gadget' | 'Stationery' | 'Other'>('Gadget');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -48,8 +154,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
     setIsAnalyzing(false);
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = () => {
     if (!image) return;
 
     if (postType === 'STORY') {
@@ -83,12 +188,22 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
       };
       onUpload(newProduct);
     }
+    setIsSafetyModalOpen(false);
   };
 
   const isFormValid = postType === 'STORY' ? !!image : (!!image && !!title && !!price);
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative">
+      {isSafetyModalOpen && (
+        <SafetyGuidelinesModal 
+          postType={postType}
+          isFormValid={isFormValid}
+          onConfirmAndUpload={handleSubmit} 
+          onClose={() => setIsSafetyModalOpen(false)} 
+        />
+      )}
+
       <header className="px-6 py-4 bg-white border-b border-slate-100 flex flex-col space-y-4 sticky top-0 z-30">
         <h1 className="text-xl font-black text-slate-900 tracking-tight">Create Post</h1>
         <div className="flex bg-slate-100 p-1 rounded-2xl">
@@ -156,7 +271,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         </div>
 
         {postType === 'PRODUCT' && (
-          <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <form className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500" onSubmit={(e) => e.preventDefault()}>
             {image && !title && !isAnalyzing && (
               <button
                 type="button"
@@ -258,7 +373,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         )}
       </div>
 
-      {/* FIXED SUBMIT BAR - This is what you were looking for! */}
+      {/* FIXED ACTION BAR */}
       {image && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[110] animate-in slide-in-from-bottom-10 duration-500">
           <div className="bg-white/90 backdrop-blur-2xl rounded-[32px] p-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/50 flex flex-col space-y-3">
@@ -270,8 +385,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
             )}
             
             <button
-              onClick={() => handleSubmit()}
-              disabled={!isFormValid}
+              onClick={() => setIsSafetyModalOpen(true)}
               className={`w-full py-5 rounded-2xl flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-xl ${
                 isFormValid 
                   ? 'bg-indigo-600 text-white shadow-indigo-600/30' 
@@ -279,16 +393,21 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
               }`}
             >
               <div className={`p-1.5 rounded-lg ${isFormValid ? 'bg-white/20' : 'bg-slate-300'}`}>
-                <Upload size={20} strokeWidth={3} />
+                {isFormValid ? <Check size={20} strokeWidth={3} /> : <Upload size={20} />}
               </div>
               <span className="text-sm font-black uppercase tracking-[0.2em]">
-                {postType === 'STORY' ? 'Submit Story' : (isFormValid ? 'Submit Listing' : 'Finalize Details')}
+                {isFormValid ? 'Review & Post' : 'Finalize Details'}
               </span>
             </button>
             
-            <p className="text-center text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">
-              By submitting, you agree to Campus Safety Guidelines
-            </p>
+            <button 
+              onClick={() => setIsSafetyModalOpen(true)}
+              className="text-center group"
+            >
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] group-hover:text-indigo-600 transition-colors">
+                Safety First: View <span className="underline decoration-indigo-200 underline-offset-2 text-slate-500">Campus Trading Rules</span>
+              </p>
+            </button>
           </div>
         </div>
       )}
