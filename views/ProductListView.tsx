@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Product } from '../types';
-import { ChevronLeft, Trash2, ShoppingBag, ArrowRight, Share2 } from 'lucide-react';
+import { ChevronLeft, Trash2, ShoppingBag, ArrowRight, Share2, AlertCircle } from 'lucide-react';
 
 interface ProductListViewProps {
   title: string;
@@ -9,10 +9,19 @@ interface ProductListViewProps {
   onBack: () => void;
   onAction: (product: Product) => void;
   onShare: (productId: string) => void;
+  onDelete?: (productId: string) => void;
   actionLabel: string;
 }
 
-const ProductListView: React.FC<ProductListViewProps> = ({ title, products, onBack, onAction, onShare, actionLabel }) => {
+const ProductListView: React.FC<ProductListViewProps> = ({ title, products, onBack, onAction, onShare, onDelete, actionLabel }) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    if (window.confirm("Are you sure you want to remove this listing? This cannot be undone.")) {
+      onDelete?.(id);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50">
       <header className="px-4 py-4 bg-white border-b border-slate-100 flex items-center sticky top-0 z-40">
@@ -48,13 +57,23 @@ const ProductListView: React.FC<ProductListViewProps> = ({ title, products, onBa
                  </div>
               </div>
               <div className="flex flex-col space-y-2">
-                <button 
-                  onClick={() => onAction(product)}
-                  className="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-slate-200 active:scale-90 transition-all flex items-center space-x-1"
-                >
-                  <span>{actionLabel}</span>
-                  <ArrowRight size={12} />
-                </button>
+                {onDelete ? (
+                   <button 
+                    onClick={() => handleDeleteClick(product.id)}
+                    className="bg-rose-50 text-rose-500 p-2.5 rounded-xl hover:bg-rose-100 active:scale-90 transition-all flex items-center justify-center"
+                    title="Delete Listing"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => onAction(product)}
+                    className="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg active:scale-90 transition-all flex items-center space-x-1"
+                  >
+                    <span>{actionLabel}</span>
+                    <ArrowRight size={12} />
+                  </button>
+                )}
                 <button 
                   onClick={() => onShare(product.id)}
                   className="bg-slate-100 text-slate-600 p-2.5 rounded-xl hover:bg-slate-200 active:scale-90 transition-all flex items-center justify-center"

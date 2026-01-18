@@ -63,108 +63,6 @@ const INITIAL_PRODUCTS: Product[] = [
     isLiked: true,
     isWishlisted: true,
     isPinned: true
-  },
-  {
-    id: 'p3',
-    sellerId: 'user4',
-    sellerName: 'Sana Khan',
-    title: 'Sony WH-1000XM5 Headset',
-    description: 'Industry leading noise canceling. Perfect for focused study sessions in the hostel.',
-    price: 18500,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Rahul Varma', 'Sana Khan', 'Vikram Singh', 'Ananya Roy', 'Ishaan K.'],
-    likes: 5,
-    shares: 8,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
-  },
-  {
-    id: 'p4',
-    sellerId: 'user5',
-    sellerName: 'Vikram Singh',
-    title: 'Logitech G502 Hero Gaming Mouse',
-    description: 'High performance wired gaming mouse. 25K DPI sensor. Used for 6 months.',
-    price: 2800,
-    image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Rahul Varma', 'Sana Khan', 'Megha Gupta', 'Rohan Mehra'],
-    likes: 4,
-    shares: 15,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
-  },
-  {
-    id: 'p5',
-    sellerId: 'user6',
-    sellerName: 'Ishaan K.',
-    title: 'Keychron V1 Mechanical Keyboard',
-    description: 'Fully customizable mechanical keyboard with Brown switches. Great for coding!',
-    price: 6200,
-    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Priya Patel', 'Sana Khan', 'Vikram Singh', 'Ananya Roy', 'Rohan Mehra', 'Megha Gupta'],
-    likes: 6,
-    shares: 20,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
-  },
-  {
-    id: 'p6',
-    sellerId: 'user7',
-    sellerName: 'Ananya Roy',
-    title: 'Samsung Galaxy Buds2 Pro',
-    description: 'Excellent sound quality and ANC. Fits perfectly. Selling as I switched to iPhone.',
-    price: 7500,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Priya Patel', 'Rahul Varma', 'Sana Khan'],
-    likes: 3,
-    shares: 5,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
-  },
-  {
-    id: 'p7',
-    sellerId: 'user8',
-    sellerName: 'Rohan Mehra',
-    title: 'Boat Airdopes 141',
-    description: 'Budget friendly wireless earbuds. Decent bass and 42H playback. Good condition.',
-    price: 900,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Ishaan K.'],
-    likes: 1,
-    shares: 2,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
-  },
-  {
-    id: 'p8',
-    sellerId: 'user9',
-    sellerName: 'Megha Gupta',
-    title: 'Razer BlackWidow V3 TKL',
-    description: 'Compact gaming keyboard with RGB. Green mechanical switches for that clicky feel.',
-    price: 4900,
-    image: 'https://images.unsplash.com/photo-1618384881928-25ca823ed02d?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    likedBy: ['Ananya Roy', 'Ishaan K.', 'Vikram Singh', 'Rahul Varma'],
-    likes: 4,
-    shares: 12,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false
   }
 ];
 
@@ -197,6 +95,14 @@ const App: React.FC = () => {
   const handleAddStory = (newStory: Story) => {
     setStories([newStory, ...stories]);
     setCurrentView('FEED');
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleDeleteStory = (storyId: string) => {
+    setStories(prev => prev.filter(s => s.id !== storyId));
   };
 
   const toggleLike = (productId: string) => {
@@ -306,12 +212,15 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'LOGIN': return <LoginView onLogin={handleLogin} />;
       case 'FEED': return <FeedView 
+        currentUser={currentUser!}
         products={products} 
         stories={stories} 
         onLike={toggleLike} 
         onLikeStory={toggleLikeStory}
         onComment={handleComment} 
         onShare={handleShare}
+        onDeleteProduct={handleDeleteProduct}
+        onDeleteStory={handleDeleteStory}
         onNavigateToChat={() => setCurrentView('CHAT')}
         onAddStoryClick={() => navigateToUpload('STORY')}
       />;
@@ -363,10 +272,11 @@ const App: React.FC = () => {
         products={products.filter(p => p.sellerId === currentUser?.id)} 
         onBack={() => setCurrentView('PROFILE')} 
         onAction={() => {}} 
+        onDelete={handleDeleteProduct}
         onShare={handleShare}
         actionLabel="Edit"
       />;
-      default: return <FeedView products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onNavigateToChat={() => setCurrentView('CHAT')} onAddStoryClick={() => navigateToUpload('STORY')} />;
+      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onAddStoryClick={() => navigateToUpload('STORY')} />;
     }
   };
 
