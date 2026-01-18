@@ -24,9 +24,9 @@ const MOCK_USER: User = {
 };
 
 const INITIAL_STORIES: Story[] = [
-  { id: 's1', userId: 'user2', userName: 'Priya', userAvatar: 'https://picsum.photos/seed/Priya/100', image: 'https://picsum.photos/seed/campus/600/1000', timestamp: Date.now() - 3600000 },
-  { id: 's2', userId: 'user3', userName: 'Rahul', userAvatar: 'https://picsum.photos/seed/Rahul/100', image: 'https://picsum.photos/seed/library/600/1000', timestamp: Date.now() - 7200000 },
-  { id: 's3', userId: 'user4', userName: 'Sana', userAvatar: 'https://picsum.photos/seed/Sana/100', image: 'https://picsum.photos/seed/cafe/600/1000', timestamp: Date.now() - 10800000 },
+  { id: 's1', userId: 'user2', userName: 'Priya', userAvatar: 'https://picsum.photos/seed/Priya/100', image: 'https://picsum.photos/seed/campus/600/1000', timestamp: Date.now() - 3600000, isLiked: false, likes: 12 },
+  { id: 's2', userId: 'user3', userName: 'Rahul', userAvatar: 'https://picsum.photos/seed/Rahul/100', image: 'https://picsum.photos/seed/library/600/1000', timestamp: Date.now() - 7200000, isLiked: false, likes: 8 },
+  { id: 's3', userId: 'user4', userName: 'Sana', userAvatar: 'https://picsum.photos/seed/Sana/100', image: 'https://picsum.photos/seed/cafe/600/1000', timestamp: Date.now() - 10800000, isLiked: false, likes: 15 },
 ];
 
 const INITIAL_PRODUCTS: Product[] = [
@@ -37,16 +37,12 @@ const INITIAL_PRODUCTS: Product[] = [
     title: 'iPad Pro 2022 - Like New',
     description: 'Barely used iPad Pro, perfect for digital note-taking. Includes Apple Pencil Gen 2.',
     price: 45000,
-    image: 'https://picsum.photos/seed/ipad/600/400',
+    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=800&auto=format&fit=crop',
     category: 'Gadget',
-    likes: 3,
     likedBy: ['Rahul Varma', 'Sana Khan', 'Vikram Singh'],
+    likes: 3,
     shares: 42,
-    comments: [
-      { id: 'c1', userId: 'user3', userName: 'Rahul Varma', text: 'Does it have a warranty?', timestamp: Date.now() - 500000 },
-      { id: 'c2', userId: 'user4', userName: 'Sana Khan', text: 'This is a great deal! I wish I had the budget.', timestamp: Date.now() - 400000 },
-      { id: 'c3', userId: 'user5', userName: 'Vikram Singh', text: 'Is the price negotiable?', timestamp: Date.now() - 300000 }
-    ],
+    comments: [],
     isLiked: false,
     isWishlisted: false,
     isPinned: false
@@ -58,15 +54,12 @@ const INITIAL_PRODUCTS: Product[] = [
     title: 'Organic Chemistry Hand-written Notes',
     description: 'Complete notes for Semester 3. Very detailed with diagrams.',
     price: 500,
-    image: 'https://picsum.photos/seed/notes/600/400',
+    image: 'https://images.unsplash.com/photo-1453749024858-4bca89bd9edc?q=80&w=800&auto=format&fit=crop',
     category: 'Notebook',
-    likes: 2,
     likedBy: ['Priya Patel', 'Ishaan K.'],
+    likes: 2,
     shares: 112,
-    comments: [
-      { id: 'cn1', userId: 'user2', userName: 'Priya Patel', text: 'Your handwriting is legendary!', timestamp: Date.now() - 100000 },
-      { id: 'cn2', userId: 'user6', userName: 'Ishaan K.', text: 'Can I get a preview of Chapter 4?', timestamp: Date.now() - 80000 }
-    ],
+    comments: [],
     isLiked: true,
     isWishlisted: true,
     isPinned: true
@@ -75,13 +68,98 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'p3',
     sellerId: 'user4',
     sellerName: 'Sana Khan',
-    title: 'Casio Scientific Calculator FX-991EX',
-    description: 'Advanced engineering calculator. Used for one semester only. Perfect for B.Tech students.',
-    price: 1100,
-    image: 'https://picsum.photos/seed/calculator/600/400',
+    title: 'Sony WH-1000XM5 Headset',
+    description: 'Industry leading noise canceling. Perfect for focused study sessions in the hostel.',
+    price: 18500,
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop',
     category: 'Gadget',
-    likes: 0,
-    likedBy: [],
+    likedBy: ['Rahul Varma', 'Sana Khan', 'Vikram Singh', 'Ananya Roy', 'Ishaan K.'],
+    likes: 5,
+    shares: 8,
+    comments: [],
+    isLiked: false,
+    isWishlisted: false,
+    isPinned: false
+  },
+  {
+    id: 'p4',
+    sellerId: 'user5',
+    sellerName: 'Vikram Singh',
+    title: 'Logitech G502 Hero Gaming Mouse',
+    description: 'High performance wired gaming mouse. 25K DPI sensor. Used for 6 months.',
+    price: 2800,
+    image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=800&auto=format&fit=crop',
+    category: 'Gadget',
+    likedBy: ['Rahul Varma', 'Sana Khan', 'Megha Gupta', 'Rohan Mehra'],
+    likes: 4,
+    shares: 15,
+    comments: [],
+    isLiked: false,
+    isWishlisted: false,
+    isPinned: false
+  },
+  {
+    id: 'p5',
+    sellerId: 'user6',
+    sellerName: 'Ishaan K.',
+    title: 'Keychron V1 Mechanical Keyboard',
+    description: 'Fully customizable mechanical keyboard with Brown switches. Great for coding!',
+    price: 6200,
+    image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=800&auto=format&fit=crop',
+    category: 'Gadget',
+    likedBy: ['Priya Patel', 'Sana Khan', 'Vikram Singh', 'Ananya Roy', 'Rohan Mehra', 'Megha Gupta'],
+    likes: 6,
+    shares: 20,
+    comments: [],
+    isLiked: false,
+    isWishlisted: false,
+    isPinned: false
+  },
+  {
+    id: 'p6',
+    sellerId: 'user7',
+    sellerName: 'Ananya Roy',
+    title: 'Samsung Galaxy Buds2 Pro',
+    description: 'Excellent sound quality and ANC. Fits perfectly. Selling as I switched to iPhone.',
+    price: 7500,
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop',
+    category: 'Gadget',
+    likedBy: ['Priya Patel', 'Rahul Varma', 'Sana Khan'],
+    likes: 3,
+    shares: 5,
+    comments: [],
+    isLiked: false,
+    isWishlisted: false,
+    isPinned: false
+  },
+  {
+    id: 'p7',
+    sellerId: 'user8',
+    sellerName: 'Rohan Mehra',
+    title: 'Boat Airdopes 141',
+    description: 'Budget friendly wireless earbuds. Decent bass and 42H playback. Good condition.',
+    price: 900,
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop',
+    category: 'Gadget',
+    likedBy: ['Ishaan K.'],
+    likes: 1,
+    shares: 2,
+    comments: [],
+    isLiked: false,
+    isWishlisted: false,
+    isPinned: false
+  },
+  {
+    id: 'p8',
+    sellerId: 'user9',
+    sellerName: 'Megha Gupta',
+    title: 'Razer BlackWidow V3 TKL',
+    description: 'Compact gaming keyboard with RGB. Green mechanical switches for that clicky feel.',
+    price: 4900,
+    image: 'https://images.unsplash.com/photo-1618384881928-25ca823ed02d?q=80&w=800&auto=format&fit=crop',
+    category: 'Gadget',
+    likedBy: ['Ananya Roy', 'Ishaan K.', 'Vikram Singh', 'Rahul Varma'],
+    likes: 4,
     shares: 12,
     comments: [],
     isLiked: false,
@@ -141,6 +219,15 @@ const App: React.FC = () => {
     }));
   };
 
+  const toggleLikeStory = (storyId: string) => {
+    setStories(prev => prev.map(s => {
+      if (s.id === storyId) {
+        return { ...s, isLiked: !s.isLiked, likes: (s.likes || 0) + (s.isLiked ? -1 : 1) };
+      }
+      return s;
+    }));
+  };
+
   const toggleWishlist = (productId: string) => {
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, isWishlisted: !p.isWishlisted } : p));
   };
@@ -169,7 +256,6 @@ const App: React.FC = () => {
         console.log("Error sharing app:", err);
       }
     } else {
-      // Fallback: Copy to clipboard and suggest WhatsApp
       const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`;
       window.open(shareUrl, '_blank');
     }
@@ -193,7 +279,6 @@ const App: React.FC = () => {
         console.log("Error sharing product:", err);
       }
     } else {
-      // Fallback: WhatsApp share
       const waUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + " View it here: " + shareData.url)}`;
       window.open(waUrl, '_blank');
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, shares: p.shares + 1 } : p));
@@ -224,6 +309,7 @@ const App: React.FC = () => {
         products={products} 
         stories={stories} 
         onLike={toggleLike} 
+        onLikeStory={toggleLikeStory}
         onComment={handleComment} 
         onShare={handleShare}
         onNavigateToChat={() => setCurrentView('CHAT')}
@@ -276,11 +362,11 @@ const App: React.FC = () => {
         title="My Listings" 
         products={products.filter(p => p.sellerId === currentUser?.id)} 
         onBack={() => setCurrentView('PROFILE')} 
-        onAction={() => {}} // Could add edit logic
+        onAction={() => {}} 
         onShare={handleShare}
         actionLabel="Edit"
       />;
-      default: return <FeedView products={products} stories={stories} onLike={toggleLike} onComment={handleComment} onShare={handleShare} onNavigateToChat={() => setCurrentView('CHAT')} onAddStoryClick={() => navigateToUpload('STORY')} />;
+      default: return <FeedView products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onNavigateToChat={() => setCurrentView('CHAT')} onAddStoryClick={() => navigateToUpload('STORY')} />;
     }
   };
 

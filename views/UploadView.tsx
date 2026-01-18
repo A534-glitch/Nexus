@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Wand2, ArrowLeft, Trash2, IndianRupee, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users } from 'lucide-react';
 import { analyzeProductImage } from '../services/gemini';
 import { Product, User, Story } from '../types';
 
@@ -21,7 +21,6 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync postType with initialType if it changes externally
   useEffect(() => {
     setPostType(initialType);
   }, [initialType]);
@@ -49,8 +48,8 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
     setIsAnalyzing(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!image) return;
 
     if (postType === 'STORY') {
@@ -85,7 +84,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 pb-24">
+    <div className="flex flex-col h-full bg-slate-50 pb-40">
       <header className="px-6 py-4 bg-white border-b border-slate-100 flex flex-col space-y-4 sticky top-0 z-30">
         <h1 className="text-xl font-black text-slate-900 tracking-tight">Create Post</h1>
         <div className="flex bg-slate-100 p-1 rounded-2xl">
@@ -104,27 +103,23 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <div className="p-6 space-y-8">
+        {/* Step 1: Media Capture */}
         <div className="space-y-4">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Capture Experience</label>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+            {image ? 'Photo Preview' : 'Capture Experience'}
+          </label>
+          
           {image ? (
-            <div className={`relative group overflow-hidden shadow-2xl bg-slate-200 ${postType === 'STORY' ? 'aspect-[9/16] rounded-[40px]' : 'aspect-video rounded-3xl'}`}>
-              <img src={image} className="w-full h-full object-cover" alt="Preview" />
+            <div className={`relative group overflow-hidden shadow-2xl bg-slate-200 transition-all duration-500 ${postType === 'STORY' ? 'aspect-[9/16] rounded-[40px]' : 'aspect-video rounded-3xl'}`}>
+              <img src={image} className="w-full h-full object-cover animate-in fade-in zoom-in duration-500" alt="Preview" />
               <button 
                 type="button"
                 onClick={() => setImage(null)}
-                className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-3 rounded-full shadow-lg hover:bg-black/60 transition-colors"
+                className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white p-3 rounded-full shadow-lg hover:bg-black/60 transition-colors z-10"
               >
                 <Trash2 size={20} />
               </button>
-              {postType === 'STORY' && (
-                <div className="absolute bottom-6 left-6 right-6 p-4 glass rounded-2xl border-white/30 text-center">
-                  <p className="text-xs font-black text-indigo-900 uppercase tracking-widest flex items-center justify-center">
-                    <Sparkles size={14} className="mr-2" />
-                    Story Preview
-                  </p>
-                </div>
-              )}
             </div>
           ) : (
             <div 
@@ -134,8 +129,8 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
               <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Camera size={32} />
               </div>
-              <p className="text-slate-600 font-bold">Tap to capture</p>
-              <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">{postType === 'STORY' ? 'Full height portrait' : 'Landscape or Square'}</p>
+              <p className="text-slate-600 font-bold text-center px-4 leading-tight">Tap to snap or upload</p>
+              <p className="text-[10px] text-slate-400 mt-2 uppercase font-black tracking-widest">{postType === 'STORY' ? 'Vertical Story' : 'Product Shot'}</p>
               <input 
                 type="file" 
                 accept="image/*" 
@@ -148,8 +143,53 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
           )}
         </div>
 
+        {/* Step 2: Details & Submit (Contextual) */}
+        {image && postType === 'STORY' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Story Settings</label>
+              <div className="bg-white rounded-[32px] border border-slate-100 p-6 space-y-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <Users size={18} />
+                      </div>
+                      <span className="text-xs font-black text-slate-700">Visibility</span>
+                   </div>
+                   <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">Public Campus</span>
+                </div>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-slate-50 text-slate-500 rounded-xl">
+                        <Clock size={18} />
+                      </div>
+                      <span className="text-xs font-black text-slate-700">Expires in</span>
+                   </div>
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">24 Hours</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                onClick={() => handleSubmit()}
+                className="w-full py-6 bg-indigo-600 text-white font-black rounded-[32px] shadow-2xl shadow-indigo-200 flex items-center justify-center space-x-3 group active:scale-[0.98] transition-all"
+              >
+                <div className="p-2 bg-white/20 rounded-xl group-hover:rotate-12 transition-transform">
+                  <Send size={20} className="-rotate-12" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="uppercase tracking-[0.2em] text-xs leading-none">Post to Campus</span>
+                  <span className="text-[9px] font-bold text-indigo-200 mt-1">Ready as {currentUser.name.split(' ')[0]}</span>
+                </div>
+              </button>
+              <p className="text-center text-[10px] text-slate-300 font-black uppercase tracking-[0.3em] mt-6">Nexus Campus Stories • Private & Secure</p>
+            </div>
+          </div>
+        )}
+
         {postType === 'PRODUCT' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
             {image && !title && !isAnalyzing && (
               <button
                 type="button"
@@ -222,31 +262,17 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
                 />
               </div>
             </div>
-          </div>
+            
+            <button
+              type="submit"
+              disabled={!image || (!title || !price)}
+              className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl shadow-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 uppercase tracking-[0.2em] text-xs"
+            >
+              List Item
+            </button>
+          </form>
         )}
-
-        {postType === 'STORY' && image && (
-          <div className="p-6 bg-indigo-50 rounded-3xl border border-indigo-100 animate-in zoom-in duration-300">
-             <div className="flex items-center space-x-4">
-                <div className="p-3 bg-indigo-600 rounded-2xl text-white">
-                  <Sparkles size={24} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-indigo-900">Post to Campus Stories</h4>
-                  <p className="text-xs text-indigo-600 font-medium">Everyone at {currentUser.college} will see this for 24 hours.</p>
-                </div>
-             </div>
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={!image || (postType === 'PRODUCT' && (!title || !price))}
-          className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl shadow-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 uppercase tracking-[0.2em] text-xs"
-        >
-          {postType === 'PRODUCT' ? 'List Item' : 'Post Story'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 };

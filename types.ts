@@ -35,6 +35,8 @@ export interface Story {
   userAvatar: string;
   image: string;
   timestamp: number;
+  isLiked?: boolean;
+  likes?: number;
 }
 
 export interface Comment {
