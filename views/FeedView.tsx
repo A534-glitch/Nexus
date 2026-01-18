@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, Story, Comment, User } from '../types';
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, X, Link as LinkIcon, Sparkles, Plus, GraduationCap, User as UserIcon, Bell, Smile, Copy, Check, Search, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, X, Link as LinkIcon, Sparkles, Plus, GraduationCap, User as UserIcon, Bell, Smile, Copy, Check, Search, ChevronRight, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
 
 interface FeedViewProps {
   currentUser: User;
@@ -14,6 +14,7 @@ interface FeedViewProps {
   onDeleteProduct: (id: string) => void;
   onDeleteStory: (id: string) => void;
   onNavigateToChat: () => void;
+  onNavigateToNotifications: () => void;
   onAddStoryClick: () => void;
 }
 
@@ -188,7 +189,7 @@ const StoriesBar = ({ stories, onSelectStory, onAddStoryClick }: { stories: Stor
   );
 };
 
-const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onLike, onLikeStory, onComment, onShare, onDeleteProduct, onDeleteStory, onNavigateToChat, onAddStoryClick }) => {
+const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onLike, onLikeStory, onComment, onShare, onDeleteProduct, onDeleteStory, onNavigateToChat, onNavigateToNotifications, onAddStoryClick }) => {
   const [activeCommentProductId, setActiveCommentProductId] = useState<string | null>(null);
   const [activeShareProductId, setActiveShareProductId] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -197,6 +198,18 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
 
   const activeCommentProduct = products.find(p => p.id === activeCommentProductId);
   const activeShareProduct = products.find(p => p.id === activeShareProductId);
+
+  // Search logic for Students and Products
+  const filteredStudents = searchQuery.trim() === '' 
+    ? [] 
+    : MOCK_ACCOUNTS.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  const filteredProducts = searchQuery.trim() === ''
+    ? products
+    : products.filter(p => 
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        p.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   return (
     <div className="flex flex-col bg-[#fafafa] min-h-full pb-32">
@@ -212,7 +225,13 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
                 <h1 className="text-2xl font-black text-slate-900 tracking-tighter italic">Nexus</h1>
               </div>
               <div className="flex items-center space-x-1">
-                <button className="p-2.5 hover:bg-slate-100 rounded-full relative"><Bell size={24} className="text-slate-900" /><span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span></button>
+                <button 
+                  onClick={onNavigateToNotifications}
+                  className="p-2.5 hover:bg-slate-100 rounded-full relative"
+                >
+                  <Bell size={24} className="text-slate-900" />
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+                </button>
                 <button onClick={onNavigateToChat} className="p-2.5 hover:bg-slate-100 rounded-full relative"><MessageCircle size={24} className="text-slate-900" /></button>
                 <button onClick={() => setIsSearchOpen(true)} className="p-2.5 hover:bg-slate-100 rounded-full"><Search size={24} className="text-slate-900" strokeWidth={2.5} /></button>
               </div>
@@ -229,67 +248,160 @@ const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onL
         </div>
       </header>
 
-      <StoriesBar stories={stories} onSelectStory={() => {}} onAddStoryClick={onAddStoryClick} />
+      {/* Default Feed View (Stories + Full List) */}
+      {!isSearchOpen && (
+        <>
+          <StoriesBar stories={stories} onSelectStory={() => {}} onAddStoryClick={onAddStoryClick} />
+          <div className="space-y-4 pt-4">
+            {products.map((product) => (
+              <PostCard 
+                key={product.id} 
+                product={product} 
+                currentUser={currentUser} 
+                onLike={onLike} 
+                onComment={setActiveCommentProductId} 
+                onShare={setActiveShareProductId} 
+                onDelete={onDeleteProduct}
+                activeMenuId={activeMenuId}
+                setActiveMenuId={setActiveMenuId}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-      <div className="space-y-4 pt-4">
-        {products.map((product) => (
-          <div key={product.id} className="bg-white border-y border-slate-100 shadow-sm relative overflow-visible">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 to-emerald-400">
-                  <div className="w-full h-full rounded-full bg-white p-[1px]">
-                    <img src={`https://picsum.photos/seed/${product.sellerName}/100`} className="w-full h-full rounded-full object-cover" alt="" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center space-x-1">
-                    <p className="text-[13px] font-black text-slate-900 leading-none">{product.sellerName}</p>
-                    <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
-                      <Check size={8} className="text-white" strokeWidth={4} />
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{product.category} • Campus Verified</p>
-                </div>
+      {/* Search Overlay View */}
+      {isSearchOpen && (
+        <div className="flex-1 animate-in fade-in duration-300 px-4 pt-6 space-y-8">
+          {/* Students Results */}
+          {searchQuery.trim() !== '' && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Found Students</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{filteredStudents.length} results</span>
               </div>
-              <div className="relative">
-                <button onClick={() => setActiveMenuId(activeMenuId === product.id ? null : product.id)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
-                  <MoreHorizontal size={20} />
-                </button>
-                {activeMenuId === product.id && (
-                  <ContextMenu 
-                    isOwner={product.sellerId === currentUser.id} 
-                    onDelete={() => { onDeleteProduct(product.id); setActiveMenuId(null); }} 
-                    onClose={() => setActiveMenuId(null)} 
-                  />
+              <div className="space-y-3">
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map(student => (
+                    <div key={student.id} className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm">
+                           <img src={student.avatar} className="w-full h-full object-cover" alt="" />
+                        </div>
+                        <div>
+                           <div className="flex items-center space-x-1">
+                              <h4 className="text-sm font-black text-slate-900 leading-tight">{student.name}</h4>
+                              {student.isVerified && <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center"><Check size={8} className="text-white" strokeWidth={4} /></div>}
+                           </div>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{student.college}</p>
+                        </div>
+                      </div>
+                      <button onClick={onNavigateToChat} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
+                        <MessageCircle size={18} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center py-4 text-xs font-bold text-slate-300 italic">No students found with that name.</p>
                 )}
               </div>
-            </div>
+            </section>
+          )}
 
-            <div className="aspect-square bg-slate-50 relative overflow-hidden">
-              <img src={product.image} className="w-full h-full object-cover" alt={product.title} onDoubleClick={() => onLike(product.id)} />
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-xl border border-white/50">
-                 <span className="text-sm font-black text-slate-900 tracking-tighter">₹{product.price.toLocaleString('en-IN')}</span>
-              </div>
+          {/* Products Results */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{searchQuery.trim() === '' ? 'Discover Latest' : 'Product Results'}</h3>
+              {searchQuery.trim() !== '' && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{filteredProducts.length} items</span>}
             </div>
-
-            <div className="px-4 py-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-5">
-                  <button onClick={() => onLike(product.id)} className="transition-transform active:scale-150"><Heart size={28} className={`${product.isLiked ? "fill-rose-500 text-rose-500" : "text-slate-900"}`} strokeWidth={2} /></button>
-                  <button onClick={() => setActiveCommentProductId(product.id)} className="transition-transform active:scale-125"><MessageCircle size={28} className="text-slate-900" strokeWidth={2} /></button>
-                  <button onClick={() => setActiveShareProductId(product.id)} className="transition-transform active:scale-125"><Share2 size={28} className="text-slate-900" strokeWidth={2} /></button>
+            <div className="space-y-4 pb-32">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <PostCard 
+                    key={product.id} 
+                    product={product} 
+                    currentUser={currentUser} 
+                    onLike={onLike} 
+                    onComment={setActiveCommentProductId} 
+                    onShare={setActiveShareProductId} 
+                    onDelete={onDeleteProduct}
+                    activeMenuId={activeMenuId}
+                    setActiveMenuId={setActiveMenuId}
+                  />
+                ))
+              ) : (
+                <div className="py-20 text-center flex flex-col items-center opacity-30">
+                   <div className="p-6 bg-slate-50 rounded-[32px] mb-4">
+                      <Search size={40} />
+                   </div>
+                   <p className="text-sm font-black text-slate-900">No items found</p>
                 </div>
-                <button className="p-2"><LinkIcon size={24} className="text-slate-900" strokeWidth={2} /></button>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-sm font-black text-slate-900 tracking-tight">{product.likes.toLocaleString()} likes</p>
-                <p className="text-sm text-slate-800 leading-relaxed"><span className="font-black mr-2 text-slate-900">{product.sellerName.split(' ')[0]}</span><span className="font-medium text-slate-600">{product.description}</span></p>
-                {product.comments.length > 0 && <button onClick={() => setActiveCommentProductId(product.id)} className="text-sm text-slate-400 font-bold block pt-1">View all {product.comments.length} comments</button>}
-                <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest pt-1">2 hours ago</p>
-              </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Extracted Subcomponent for cleaner code
+const PostCard = ({ product, currentUser, onLike, onComment, onShare, onDelete, activeMenuId, setActiveMenuId }: any) => {
+  return (
+    <div className="bg-white border-y border-slate-100 shadow-sm relative overflow-visible animate-in fade-in duration-500">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 to-emerald-400">
+            <div className="w-full h-full rounded-full bg-white p-[1px]">
+              <img src={`https://picsum.photos/seed/${product.sellerName}/100`} className="w-full h-full rounded-full object-cover" alt="" />
             </div>
           </div>
-        ))}
+          <div>
+            <div className="flex items-center space-x-1">
+              <p className="text-[13px] font-black text-slate-900 leading-none">{product.sellerName}</p>
+              <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
+                <Check size={8} className="text-white" strokeWidth={4} />
+              </div>
+            </div>
+            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{product.category} • Campus Verified</p>
+          </div>
+        </div>
+        <div className="relative">
+          <button onClick={() => setActiveMenuId(activeMenuId === product.id ? null : product.id)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
+            <MoreHorizontal size={20} />
+          </button>
+          {activeMenuId === product.id && (
+            <ContextMenu 
+              isOwner={product.sellerId === currentUser.id} 
+              onDelete={() => { onDelete(product.id); setActiveMenuId(null); }} 
+              onClose={() => setActiveMenuId(null)} 
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="aspect-square bg-slate-50 relative overflow-hidden">
+        <img src={product.image} className="w-full h-full object-cover" alt={product.title} onDoubleClick={() => onLike(product.id)} />
+        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-xl border border-white/50">
+           <span className="text-sm font-black text-slate-900 tracking-tighter">₹{product.price.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-5">
+            <button onClick={() => onLike(product.id)} className="transition-transform active:scale-150"><Heart size={28} className={`${product.isLiked ? "fill-rose-500 text-rose-500" : "text-slate-900"}`} strokeWidth={2} /></button>
+            <button onClick={() => onComment(product.id)} className="transition-transform active:scale-125"><MessageCircle size={28} className="text-slate-900" strokeWidth={2} /></button>
+            <button onClick={() => onShare(product.id)} className="transition-transform active:scale-125"><Share2 size={28} className="text-slate-900" strokeWidth={2} /></button>
+          </div>
+          <button className="p-2"><LinkIcon size={24} className="text-slate-900" strokeWidth={2} /></button>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-sm font-black text-slate-900 tracking-tight">{product.likes.toLocaleString()} likes</p>
+          <p className="text-sm text-slate-800 leading-relaxed"><span className="font-black mr-2 text-slate-900">{product.sellerName.split(' ')[0]}</span><span className="font-medium text-slate-600">{product.description}</span></p>
+          {product.comments.length > 0 && <button onClick={() => onComment(product.id)} className="text-sm text-slate-400 font-bold block pt-1">View all {product.comments.length} comments</button>}
+          <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest pt-1">2 hours ago</p>
+        </div>
       </div>
     </div>
   );

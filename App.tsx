@@ -11,6 +11,7 @@ import ProfileView from './views/ProfileView';
 import PaymentView from './views/PaymentView';
 import SettingsView from './views/SettingsView';
 import ProductListView from './views/ProductListView';
+import NotificationView from './views/NotificationView';
 import BottomNav from './components/BottomNav';
 
 const MOCK_USER: User = {
@@ -222,6 +223,7 @@ const App: React.FC = () => {
         onDeleteProduct={handleDeleteProduct}
         onDeleteStory={handleDeleteStory}
         onNavigateToChat={() => setCurrentView('CHAT')}
+        onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')}
         onAddStoryClick={() => navigateToUpload('STORY')}
       />;
       case 'MARKET': return <MarketView 
@@ -276,7 +278,8 @@ const App: React.FC = () => {
         onShare={handleShare}
         actionLabel="Edit"
       />;
-      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onAddStoryClick={() => navigateToUpload('STORY')} />;
+      case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
+      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onAddStoryClick={() => navigateToUpload('STORY')} />;
     }
   };
 

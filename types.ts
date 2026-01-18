@@ -69,4 +69,4 @@ export interface Chat {
   isPinned?: boolean;
 }
 
-export type View = 'LOGIN' | 'FEED' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS';
+export type View = 'LOGIN' | 'FEED' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS';
