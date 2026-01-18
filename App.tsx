@@ -81,13 +81,31 @@ const App: React.FC = () => {
   const [myPurchases, setMyPurchases] = useState<Product[]>([]);
   const [uploadMode, setUploadMode] = useState<'PRODUCT' | 'STORY'>('PRODUCT');
 
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('nexus_user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+      setCurrentView('FEED');
+    }
+  }, []);
+
   const handleLogin = (name: string) => {
-    setCurrentUser({ ...MOCK_USER, name });
+    const newUser = { ...MOCK_USER, name };
+    setCurrentUser(newUser);
+    localStorage.setItem('nexus_user', JSON.stringify(newUser));
     setCurrentView('FEED');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('nexus_user');
+    setCurrentView('LOGIN');
   };
 
   const handleUpdateUser = (updatedUser: User) => {
     setCurrentUser(updatedUser);
+    localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
   };
 
   const handleAddProduct = (newProduct: Product) => {
@@ -261,7 +279,7 @@ const App: React.FC = () => {
       case 'PROFILE': return <ProfileView 
         user={currentUser!} 
         myPurchases={myPurchases} 
-        onLogout={() => { setCurrentUser(null); setCurrentView('LOGIN'); }} 
+        onLogout={handleLogout} 
         onSettings={() => setCurrentView('SETTINGS')} 
         onWishlist={() => setCurrentView('WISHLIST')}
         onManageListings={() => setCurrentView('MY_LISTINGS')}
