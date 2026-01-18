@@ -1,7 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Product } from '../types';
-import { Settings, ShoppingBag, Bookmark, LogOut, ChevronRight, Award, Package, Clock, CheckCircle, Share2, Users } from 'lucide-react';
+import { 
+  Settings, ShoppingBag, Bookmark, LogOut, ChevronRight, 
+  Award, Package, Clock, CheckCircle, Share2, Users, 
+  ShieldCheck, Info, X, MapPin, Scale, Lock, Ban, Heart, Zap
+} from 'lucide-react';
 
 interface ProfileViewProps {
   user: User;
@@ -13,147 +17,262 @@ interface ProfileViewProps {
   onShareApp: () => void;
 }
 
+const LegalModal = ({ title, type, onClose }: { title: string, type: 'SAFETY' | 'PRIVACY', onClose: () => void }) => {
+  const safetyTips = [
+    {
+      icon: <MapPin className="text-indigo-600" size={24} />,
+      title: "Public Campus Meetups",
+      desc: "Always trade in high-traffic campus zones like the Central Library, Canteen, or Main Gate. Avoid meeting in private hostel rooms."
+    },
+    {
+      icon: <ShieldCheck className="text-emerald-600" size={24} />,
+      title: "ID Verification",
+      desc: "Nexus verifies college IDs, but it's good practice to double-check the 'Verified' badge on the student's profile before meeting."
+    },
+    {
+      icon: <Lock className="text-amber-600" size={24} />,
+      title: "Secure Payments",
+      desc: "Inspect the notebook or gadget thoroughly before authorizing UPI transfers. Use the Nexus 'Buy' button for digital records."
+    },
+    {
+      icon: <Ban className="text-rose-600" size={24} />,
+      title: "Report Suspicious Activity",
+      desc: "If a deal feels too good to be true or a student asks for personal info outside of campus, use the 'Report' button immediately."
+    }
+  ];
+
+  const privacyPoints = [
+    {
+      icon: <ShieldCheck className="text-indigo-600" size={24} />,
+      title: "Data Ownership",
+      desc: "You own your listings and profile data. We only use your information to facilitate campus trades and verify student status."
+    },
+    {
+      icon: <Lock className="text-indigo-600" size={24} />,
+      title: "Encrypted Chats",
+      desc: "Conversations on Nexus are secure. We do not read your private messages except when a safety violation is reported for moderation."
+    },
+    {
+      icon: <Info className="text-indigo-600" size={24} />,
+      title: "Third-Party Sharing",
+      desc: "We never sell your student data to advertisers. Your information stays within the Nexus campus ecosystem."
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[300] flex flex-col justify-end animate-in fade-in duration-300">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="bg-white w-full h-[85vh] rounded-t-[48px] shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-20">
+           <div className="flex items-center space-x-3">
+             <div className="p-2 bg-indigo-600 rounded-xl">
+               <ShieldCheck className="text-white" size={20} />
+             </div>
+             <h2 className="text-xl font-black text-slate-900 tracking-tight">{title}</h2>
+           </div>
+           <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+             <X size={20} className="text-slate-900" />
+           </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8 hide-scrollbar pb-20">
+           {type === 'SAFETY' ? (
+             <>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed text-center">
+                 Your security is our campus priority.
+               </p>
+               <div className="space-y-8">
+                  {safetyTips.map((tip, idx) => (
+                    <div key={idx} className="flex space-x-5">
+                       <div className="flex-shrink-0 w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
+                          {tip.icon}
+                       </div>
+                       <div className="space-y-1">
+                          <h3 className="text-base font-black text-slate-900">{tip.title}</h3>
+                          <p className="text-sm text-slate-500 font-medium leading-relaxed">{tip.desc}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+             </>
+           ) : (
+             <>
+               <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed text-center">
+                 Student privacy built by design.
+               </p>
+               <div className="space-y-8">
+                  {privacyPoints.map((point, idx) => (
+                    <div key={idx} className="flex space-x-5">
+                       <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shadow-sm">
+                          {point.icon}
+                       </div>
+                       <div className="space-y-1">
+                          <h3 className="text-base font-black text-slate-900">{point.title}</h3>
+                          <p className="text-sm text-slate-500 font-medium leading-relaxed">{point.desc}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+               <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    By using Nexus, you agree to our Terms of Service. We process data under the guidelines of student privacy laws and campus digital policies.
+                  </p>
+               </div>
+             </>
+           )}
+        </div>
+
+        <div className="p-8 bg-white border-t border-slate-100">
+           <button 
+            onClick={onClose}
+            className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-[0.98] transition-all"
+           >
+             Close
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, onSettings, onWishlist, onManageListings, onShareApp }) => {
+  const [modalContent, setModalContent] = useState<{ title: string, type: 'SAFETY' | 'PRIVACY' } | null>(null);
+
   const stats = [
     { label: 'Selling', value: '12', icon: ShoppingBag },
     { label: 'Purchased', value: myPurchases.length.toString(), icon: Package },
     { label: 'Rating', value: '4.9', icon: Award },
   ];
 
+  const menuItems = [
+    { label: 'My Listings', icon: ShoppingBag, onClick: onManageListings, color: 'text-indigo-600' },
+    { label: 'My Wishlist', icon: Bookmark, onClick: onWishlist, color: 'text-rose-500' },
+    { label: 'Payments', icon: CheckCircle, onClick: () => {}, color: 'text-emerald-500' },
+    { label: 'Invite Peers', icon: Share2, onClick: onShareApp, color: 'text-sky-500' },
+  ];
+
   return (
-    <div className="flex flex-col min-h-full bg-slate-50">
-      <header className="px-6 py-6 bg-indigo-600 text-white pb-12 rounded-b-[40px] shadow-lg relative">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold">My Profile</h2>
-          <button 
-            onClick={onSettings}
-            className="p-2 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"
-          >
-             <Settings size={20} />
-          </button>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="w-20 h-20 rounded-3xl bg-white p-1 shadow-2xl overflow-hidden border-2 border-indigo-400">
-            <img src={user.avatar} className="w-full h-full object-cover rounded-2xl" alt="" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <p className="text-indigo-100 text-sm font-medium">{user.college}</p>
-          </div>
-        </div>
-      </header>
+    <div className="flex flex-col h-full bg-[#f8fafc] pb-32">
+      {modalContent && (
+        <LegalModal 
+          title={modalContent.title} 
+          type={modalContent.type} 
+          onClose={() => setModalContent(null)} 
+        />
+      )}
 
-      <div className="px-6 -mt-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex justify-around p-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="flex justify-center text-indigo-600 mb-1">
-                <stat.icon size={18} />
+      {/* Profile Header */}
+      <div className="bg-white px-8 pt-16 pb-10 rounded-b-[56px] shadow-sm border-b border-slate-100">
+        <div className="flex items-center justify-between mb-8">
+           <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile Status: Active</span>
+           </div>
+           <button onClick={onSettings} className="p-2.5 bg-slate-50 text-slate-900 rounded-2xl hover:bg-slate-100 transition-all active:scale-90">
+             <Settings size={22} />
+           </button>
+        </div>
+
+        <div className="flex flex-col items-center text-center">
+           <div className="relative mb-6">
+              <div className="w-32 h-32 rounded-[42px] p-1.5 bg-gradient-to-tr from-indigo-500 via-purple-500 to-rose-500 shadow-2xl">
+                 <div className="w-full h-full rounded-[38px] bg-white p-1">
+                    <img src={user.avatar} className="w-full h-full rounded-[34px] object-cover" alt="" />
+                 </div>
               </div>
-              <p className="text-xl font-extrabold text-slate-900">{stat.value}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Share App Section */}
-      <div className="px-6 mt-6">
-        <button 
-          onClick={onShareApp}
-          className="w-full bg-indigo-600 text-white p-5 rounded-[28px] shadow-xl shadow-indigo-200 flex items-center justify-between group active:scale-[0.98] transition-all"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-2.5 bg-white/20 rounded-2xl">
-              <Users size={20} />
-            </div>
-            <div className="text-left">
-              <span className="block font-black text-sm tracking-tight">Invite Campus Friends</span>
-              <span className="block text-[10px] font-bold text-indigo-100 uppercase tracking-widest">Share Nexus Link</span>
-            </div>
-          </div>
-          <Share2 size={20} className="group-hover:translate-x-1 transition-transform" />
-        </button>
-      </div>
-
-      <div className="px-6 pt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest px-2">My Collection</h3>
-          <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">Account Assets</span>
-        </div>
-        
-        {myPurchases.length === 0 ? (
-          <div className="bg-white rounded-[32px] p-10 text-center border border-dashed border-slate-200 shadow-sm">
-            <div className="bg-slate-50 w-16 h-16 rounded-[24px] flex items-center justify-center mx-auto mb-4 text-slate-300">
-              <ShoppingBag size={32} />
-            </div>
-            <p className="text-sm font-black text-slate-400 leading-tight">No items in your account yet.<br/><span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Buy or rent essentials to see them here.</span></p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {myPurchases.map((product) => (
-              <div key={product.id} className="bg-white rounded-[28px] p-4 border border-slate-100 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-500">
-                <div className="aspect-square rounded-2xl overflow-hidden mb-3 relative shadow-inner bg-slate-50">
-                  <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                  <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg ${product.purchaseType === 'BOUGHT' ? 'bg-indigo-600 text-white' : 'bg-emerald-500 text-white'}`}>
-                    {product.purchaseType}
-                  </div>
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md text-emerald-600 p-1 rounded-lg shadow-sm">
-                    <CheckCircle size={14} />
-                  </div>
-                </div>
-                <h4 className="text-[11px] font-black text-slate-900 truncate mb-1">{product.title}</h4>
-                <div className="flex items-center space-x-1.5 opacity-60">
-                  <Clock size={10} className="text-slate-400" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Verified Owner</span>
-                </div>
+              <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-xl border-4 border-white">
+                 <ShieldCheck size={18} />
               </div>
-            ))}
-          </div>
-        )}
+           </div>
+
+           <h2 className="text-2xl font-black text-slate-900 tracking-tighter">{user.name}</h2>
+           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{user.college || 'Nexus Member'}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mt-10">
+           {stats.map((stat, i) => (
+             <div key={i} className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col items-center text-center">
+                <stat.icon size={18} className="text-slate-400 mb-2" />
+                <span className="text-lg font-black text-slate-900 leading-none">{stat.value}</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{stat.label}</span>
+             </div>
+           ))}
+        </div>
       </div>
 
-      <div className="px-6 py-8 space-y-4">
-        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Account Control</h3>
+      {/* Profile Sections */}
+      <div className="px-6 py-8 space-y-10">
         
-        <button 
-          onClick={onManageListings}
-          className="w-full bg-white p-5 rounded-[28px] border border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-all group active:scale-[0.98] shadow-sm"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
-              <ShoppingBag size={20} />
-            </div>
-            <span className="font-black text-slate-700 tracking-tight">Manage Listings</span>
-          </div>
-          <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-        </button>
+        {/* Main Menu */}
+        <div className="space-y-4">
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">General</h3>
+           <div className="bg-white rounded-[40px] border border-slate-100 overflow-hidden shadow-sm">
+              {menuItems.map((item, i) => (
+                <button 
+                  key={i} 
+                  onClick={item.onClick}
+                  className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0"
+                >
+                   <div className="flex items-center space-x-4">
+                      <div className={`p-2.5 rounded-2xl bg-slate-50 ${item.color}`}>
+                         <item.icon size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-900">{item.label}</span>
+                   </div>
+                   <ChevronRight size={18} className="text-slate-300" />
+                </button>
+              ))}
+           </div>
+        </div>
 
-        <button 
-          onClick={onWishlist}
-          className="w-full bg-white p-5 rounded-[28px] border border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-all group active:scale-[0.98] shadow-sm"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-2.5 bg-rose-50 text-rose-500 rounded-2xl">
-              <Bookmark size={20} />
-            </div>
-            <span className="font-black text-slate-700 tracking-tight">Wishlist</span>
-          </div>
-          <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-        </button>
+        {/* Support & Legal Section */}
+        <div className="space-y-4">
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Support & Legal</h3>
+           <div className="bg-white rounded-[40px] border border-slate-100 overflow-hidden shadow-sm">
+              <button 
+                onClick={() => setModalContent({ title: 'Safety Tips', type: 'SAFETY' })}
+                className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-50"
+              >
+                 <div className="flex items-center space-x-4">
+                    <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                       <Zap size={20} />
+                    </div>
+                    <span className="text-sm font-bold text-slate-900">Safety Tips</span>
+                 </div>
+                 <ChevronRight size={18} className="text-slate-300" />
+              </button>
+              <button 
+                onClick={() => setModalContent({ title: 'Privacy Policy', type: 'PRIVACY' })}
+                className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors"
+              >
+                 <div className="flex items-center space-x-4">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                       <ShieldCheck size={20} />
+                    </div>
+                    <span className="text-sm font-bold text-slate-900">Privacy Policy</span>
+                 </div>
+                 <ChevronRight size={18} className="text-slate-300" />
+              </button>
+           </div>
+        </div>
 
+        {/* Logout */}
         <button 
           onClick={onLogout}
-          className="w-full bg-rose-50 p-5 rounded-[28px] border border-rose-100 flex items-center space-x-4 text-rose-600 font-black hover:bg-rose-100 transition-colors mt-8 active:scale-[0.98] shadow-sm"
+          className="w-full py-5 bg-white border border-rose-100 text-rose-500 rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-sm flex items-center justify-center space-x-3 active:scale-95 transition-all"
         >
           <LogOut size={20} />
-          <span className="uppercase tracking-widest text-xs">Logout from Nexus</span>
+          <span>Exit Campus Network</span>
         </button>
-      </div>
 
-      <div className="mt-auto px-6 pb-6 text-center">
-        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Nexus Digital Ecosystem v1.0.0</p>
+        <div className="text-center space-y-2 opacity-30 pb-10">
+           <div className="flex items-center justify-center space-x-2">
+             <div className="w-8 h-[1px] bg-slate-400"></div>
+             <p className="text-[10px] font-black uppercase tracking-[0.5em]">Nexus v1.0.4</p>
+             <div className="w-8 h-[1px] bg-slate-400"></div>
+           </div>
+           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Built for university students by Nexus Digital</p>
+        </div>
       </div>
     </div>
   );
