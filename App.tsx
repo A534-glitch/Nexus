@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, View, Product, Chat as ChatType, Comment, Message, Story } from './types';
 import LoginView from './views/LoginView';
 import FeedView from './views/FeedView';
+import ExploreView from './views/ExploreView';
 import MarketView from './views/MarketView';
 import ChatListView from './views/ChatListView';
 import ChatDetailView from './views/ChatDetailView';
@@ -389,6 +390,7 @@ const App: React.FC = () => {
         onNavigateToUserProfile={navigateToUserProfile}
         onAddStoryClick={() => navigateToUpload('STORY')}
       />;
+      case 'EXPLORE': return <ExploreView products={products} onSelectProduct={(p) => { setCheckoutProduct(p); setCurrentView('MARKET'); }} />;
       case 'MARKET': return <MarketView 
         products={products} 
         onToggleWishlist={toggleWishlist}

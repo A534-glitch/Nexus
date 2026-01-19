@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Home, ShoppingBag, PlusSquare, MessageCircle, User as UserIcon, Sparkles } from 'lucide-react';
+import { Home, ShoppingBag, PlusSquare, MessageCircle, User as UserIcon, Search } from 'lucide-react';
 import { View } from '../types';
 
 interface BottomNavProps {
@@ -10,9 +11,9 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   const tabs = [
     { id: 'FEED', icon: Home, label: 'Feed' },
-    { id: 'MARKET', icon: ShoppingBag, label: 'Shop' },
+    { id: 'EXPLORE', icon: Search, label: 'Explore' },
     { id: 'UPLOAD', icon: PlusSquare, label: 'Post', special: true },
-    { id: 'CHAT', icon: MessageCircle, label: 'Chat' },
+    { id: 'MARKET', icon: ShoppingBag, label: 'Shop' },
     { id: 'PROFILE', icon: UserIcon, label: 'Me' },
   ];
 

@@ -73,4 +73,11 @@ export interface Chat {
   isPinned?: boolean;
 }
 
-export type View = 'LOGIN' | 'FEED' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE';
+export interface Collection {
+  id: string;
+  name: string;
+  productIds: string[];
+  coverImage: string;
+}
+
+export type View = 'LOGIN' | 'FEED' | 'EXPLORE' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE';
