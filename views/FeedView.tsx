@@ -22,10 +22,17 @@ interface FeedViewProps {
 const MOCK_ACCOUNTS: User[] = [
   { id: 'u101', name: 'Arjun Mehra', avatar: 'https://picsum.photos/seed/arjunm/100', college: 'IIT Delhi', isVerified: true, bio: "Tech enthusiast. Selling my old gear to fund my next build. 💻", followers: 450, following: 320 },
   { id: 'user2', name: 'Priya Patel', avatar: 'https://picsum.photos/seed/Priya/100', college: 'SRCC Delhi', isVerified: true, bio: "Economics major. Finding new homes for my library of notes. 📚", followers: 1200, following: 800 },
-  { id: 'user3', name: 'Rahul Varma', avatar: 'https://picsum.photos/seed/Rahul/100', college: 'BITS Pilani', isVerified: false, bio: "Music and Marketing. 🎸", followers: 150, following: 140 },
+  { id: 'user3', name: 'Rahul Varma', avatar: 'https://picsum.photos/seed/Rahul/100', college: 'BITS Pilani', isVerified: false, bio: "Music and Marketing. 🎸 Always looking for vintage gadgets.", followers: 150, following: 140 },
   { id: 'u104', name: 'Sana Varma', avatar: 'https://picsum.photos/seed/sanav/100', college: 'VIT Vellore', isVerified: true, bio: "Design student. Minimalism is the key. ✨", followers: 890, following: 400 },
-  { id: 'u105', name: 'Ishaan Khattar', avatar: 'https://picsum.photos/seed/ishaan/100', college: 'Delhi University', isVerified: false, bio: "Sports & History. 🏟️", followers: 310, following: 290 },
+  { id: 'u105', name: 'Ishaan Khattar', avatar: 'https://picsum.photos/seed/ishaan/100', college: 'Delhi University', isVerified: false, bio: "Sports & History. 🏟️ Collector of rare books.", followers: 310, following: 290 },
   { id: 'u106', name: 'Ananya Pandey', avatar: 'https://picsum.photos/seed/ananya/100', college: 'NIFT Mumbai', isVerified: true, bio: "Fashion & Lifestyle. 👗 Sharing my curated collection.", followers: 2400, following: 500 },
+  { id: 'u107', name: 'Vikram Singh', avatar: 'https://picsum.photos/seed/vikrams/100', college: 'IIT Bombay', isVerified: true, bio: "Mechanical Engineering. 🛠️ Selling lab equipment and gadgets.", followers: 560, following: 210 },
+  { id: 'u108', name: 'Megha Rao', avatar: 'https://picsum.photos/seed/megha/100', college: 'AIIMS Delhi', isVerified: true, bio: "Future Doctor. 🩺 Selling medical textbooks and anatomy notes.", followers: 1100, following: 450 },
+  { id: 'u109', name: 'Karthik S.', avatar: 'https://picsum.photos/seed/karthik/100', college: 'RVCE Bangalore', isVerified: false, bio: "Computer Science. 💻 Algorithm enthusiast.", followers: 420, following: 380 },
+  { id: 'u110', name: 'Sneha Kapur', avatar: 'https://picsum.photos/seed/sneha/100', college: 'LPU Jalandhar', isVerified: true, bio: "BBA student. 📈 Business strategist.", followers: 670, following: 540 },
+  { id: 'u111', name: 'Rohan Das', avatar: 'https://picsum.photos/seed/rohan/100', college: 'Jadavpur University', isVerified: false, bio: "Physics major. 🌌 Exploring the universe one note at a time.", followers: 290, following: 300 },
+  { id: 'u112', name: 'Zoya Ahmed', avatar: 'https://picsum.photos/seed/zoya/100', college: 'AMU Aligarh', isVerified: true, bio: "Architecture & Art. 🏛️ Selling drafting tools.", followers: 820, following: 410 },
+  { id: 'u113', name: 'Abhishek J.', avatar: 'https://picsum.photos/seed/abhishek/100', college: 'NLS Bangalore', isVerified: true, bio: "Law student. ⚖️ Prep for mock trials.", followers: 1500, following: 600 },
 ];
 
 const ShareSheet = ({ product, onClose }: { product: Product, onClose: () => void }) => {
