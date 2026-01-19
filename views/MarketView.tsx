@@ -113,18 +113,27 @@ const ShareSheet = ({ product, onClose }: { product: Product, onClose: () => voi
 
 const MarketView: React.FC<MarketViewProps> = ({ products, onBargain, onBuyNow, onRentNow, onToggleWishlist, onTogglePin, onShare }) => {
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [bargainPrice, setBargainPrice] = useState('');
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [activeShareProductId, setActiveShareProductId] = useState<string | null>(null);
   
-  const aiSectionRef = useRef<HTMLDivElement>(null);
+  const categories = [
+    { label: 'All', value: 'All' },
+    { label: 'Gadgets', value: 'Gadget' },
+    { label: 'Notebooks', value: 'Notebook' },
+    { label: 'Stationery', value: 'Stationery' },
+    { label: 'Other', value: 'Other' }
+  ];
 
-  const filtered = products.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+  const filtered = products.filter(p => {
+    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
+                         p.category.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  }).sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
   const handleGetBargainAdvice = async () => {
     if (!selectedProduct || !bargainPrice) return;
@@ -193,66 +202,85 @@ const MarketView: React.FC<MarketViewProps> = ({ products, onBargain, onBuyNow, 
 
       {/* Categories Horizontal Scroll */}
       <div className="flex space-x-3 px-6 py-4 overflow-x-auto hide-scrollbar">
-        {['All', 'Gadgets', 'Notebooks', 'Stationery', 'Furniture'].map((cat, i) => (
-          <button key={cat} className={`px-5 py-2.5 rounded-2xl text-xs font-black tracking-tight whitespace-nowrap transition-all ${i === 0 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-            {cat}
+        {categories.map((cat) => (
+          <button 
+            key={cat.value} 
+            onClick={() => setSelectedCategory(cat.value)}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-black tracking-tight whitespace-nowrap transition-all ${selectedCategory === cat.value ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+          >
+            {cat.label}
           </button>
         ))}
       </div>
 
       <div className="p-6 grid grid-cols-2 gap-4">
-        {filtered.map(product => (
-          <div 
-            key={product.id} 
-            className={`bg-white rounded-[32px] overflow-hidden border transition-all duration-500 cursor-pointer relative ${product.isPinned ? 'border-indigo-500 shadow-indigo-100 shadow-xl' : 'border-slate-100 shadow-sm'}`}
-            onClick={() => setSelectedProduct(product)}
-          >
-            <div className="aspect-[1/1] bg-slate-50 relative overflow-hidden">
-               <img src={product.image} className="w-full h-full object-cover" alt={product.title} />
-               <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2 py-1 rounded-xl shadow-sm">
-                 <span className="text-[11px] font-black text-slate-900 tracking-tighter">₹{product.price.toLocaleString('en-IN')}</span>
-               </div>
-               
-               <div className="absolute top-3 right-3 flex flex-col space-y-2">
-                 <button 
-                  onClick={(e) => { e.stopPropagation(); onTogglePin(product.id); }}
-                  className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 ${product.isPinned ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400'}`}
-                 >
-                    <Pin size={16} className={product.isPinned ? 'rotate-45' : ''} fill={product.isPinned ? "currentColor" : "none"} />
-                 </button>
-                 <button 
-                  onClick={(e) => { e.stopPropagation(); onToggleWishlist(product.id); }}
-                  className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 ${product.isWishlisted ? 'bg-rose-500 text-white' : 'bg-white text-slate-400'}`}
-                 >
-                    <Bookmark size={16} fill={product.isWishlisted ? "currentColor" : "none"} />
-                 </button>
-                 <button 
-                  onClick={(e) => { e.stopPropagation(); setActiveShareProductId(product.id); }}
-                  className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 bg-white text-slate-400`}
-                 >
-                    <Share2 size={16} />
-                 </button>
-               </div>
-               
-               {product.isPinned && (
-                 <div className="absolute bottom-3 left-3 bg-indigo-600 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg">
-                   Pinned
+        {filtered.length > 0 ? (
+          filtered.map(product => (
+            <div 
+              key={product.id} 
+              className={`bg-white rounded-[32px] overflow-hidden border transition-all duration-500 cursor-pointer relative animate-in fade-in zoom-in ${product.isPinned ? 'border-indigo-500 shadow-indigo-100 shadow-xl' : 'border-slate-100 shadow-sm'}`}
+              onClick={() => setSelectedProduct(product)}
+            >
+              <div className="aspect-[1/1] bg-slate-50 relative overflow-hidden">
+                 <img src={product.image} className="w-full h-full object-cover" alt={product.title} />
+                 <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2 py-1 rounded-xl shadow-sm">
+                   <span className="text-[11px] font-black text-slate-900 tracking-tighter">₹{product.price.toLocaleString('en-IN')}</span>
                  </div>
-               )}
-               
-               <button className="absolute bottom-3 right-3 bg-white text-slate-900 p-2 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                  <Plus size={16} strokeWidth={3} />
-               </button>
-            </div>
-            <div className="p-4">
-              <h3 className="text-[13px] font-black text-slate-900 leading-tight truncate mb-1">{product.title}</h3>
-              <div className="flex items-center space-x-1">
-                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{product.sellerName.split(' ')[0]}</span>
+                 
+                 <div className="absolute top-3 right-3 flex flex-col space-y-2">
+                   <button 
+                    onClick={(e) => { e.stopPropagation(); onTogglePin(product.id); }}
+                    className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 ${product.isPinned ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400'}`}
+                   >
+                      <Pin size={16} className={product.isPinned ? 'rotate-45' : ''} fill={product.isPinned ? "currentColor" : "none"} />
+                   </button>
+                   <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleWishlist(product.id); }}
+                    className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 ${product.isWishlisted ? 'bg-rose-500 text-white' : 'bg-white text-slate-400'}`}
+                   >
+                      <Bookmark size={16} fill={product.isWishlisted ? "currentColor" : "none"} />
+                   </button>
+                   <button 
+                    onClick={(e) => { e.stopPropagation(); setActiveShareProductId(product.id); }}
+                    className={`p-2 rounded-xl shadow-lg transition-all active:scale-75 bg-white text-slate-400`}
+                   >
+                      <Share2 size={16} />
+                   </button>
+                 </div>
+                 
+                 {product.isPinned && (
+                   <div className="absolute bottom-3 left-3 bg-indigo-600 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg">
+                     Pinned
+                   </div>
+                 )}
+                 
+                 <button className="absolute bottom-3 right-3 bg-white text-slate-900 p-2 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    <Plus size={16} strokeWidth={3} />
+                 </button>
+              </div>
+              <div className="p-4">
+                <h3 className="text-[13px] font-black text-slate-900 leading-tight truncate mb-1">{product.title}</h3>
+                <div className="flex items-center space-x-1">
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{product.sellerName.split(' ')[0]}</span>
+                </div>
               </div>
             </div>
+          ))
+        ) : (
+          <div className="col-span-2 py-20 text-center flex flex-col items-center opacity-30">
+            <div className="p-8 bg-slate-50 rounded-[40px] mb-4">
+               <Search size={48} className="text-slate-300" />
+            </div>
+            <p className="text-sm font-black text-slate-900">No items in this category</p>
+            <button 
+              onClick={() => { setSelectedCategory('All'); setSearch(''); }}
+              className="mt-4 text-xs font-black text-indigo-600 uppercase tracking-widest"
+            >
+              Clear Filters
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Product Detail Modal */}
