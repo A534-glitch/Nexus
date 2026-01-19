@@ -120,7 +120,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
                   className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold"
                   value={college}
                   onChange={(e) => setCollege(e.target.value)}
-                  placeholder="University / College"
+                  placeholder="Institution Name (e.g. IIT Delhi)"
                 />
               </div>
             </div>

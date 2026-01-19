@@ -4,7 +4,8 @@ import { User, Product } from '../types';
 import { 
   Settings, ShoppingBag, Bookmark, LogOut, ChevronRight, 
   Award, Package, Clock, CheckCircle, Share2, Users, 
-  ShieldCheck, Info, X, MapPin, Scale, Lock, Ban, Heart, Zap
+  ShieldCheck, Info, X, MapPin, Scale, Lock, Ban, Heart, Zap,
+  GraduationCap
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -147,6 +148,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, 
   const menuItems = [
     { label: 'My Listings', icon: ShoppingBag, onClick: onManageListings, color: 'text-indigo-600' },
     { label: 'My Wishlist', icon: Bookmark, onClick: onWishlist, color: 'text-rose-500' },
+    { label: 'Change Institution', icon: GraduationCap, onClick: onSettings, color: 'text-amber-600' },
     { label: 'Payments', icon: CheckCircle, onClick: () => {}, color: 'text-emerald-500' },
     { label: 'Invite Peers', icon: Share2, onClick: onShareApp, color: 'text-sky-500' },
   ];
