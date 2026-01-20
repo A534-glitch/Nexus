@@ -11,6 +11,13 @@ export interface User {
   followers?: number;
   following?: number;
   postsCount?: number;
+  notificationPrefs?: {
+    messages: boolean;
+    bargains: boolean;
+    likes: boolean;
+    comments: boolean;
+    campusAlerts: boolean;
+  };
 }
 
 export interface Product {
@@ -20,6 +27,8 @@ export interface Product {
   title: string;
   description: string;
   price: number;
+  rentPrice?: number;
+  canRent?: boolean;
   image: string;
   category: 'Notebook' | 'Gadget' | 'Stationery' | 'Other';
   likes: number;

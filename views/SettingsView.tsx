@@ -4,7 +4,8 @@ import { User } from '../types';
 import { 
   ChevronLeft, Camera, User as UserIcon, Bell, Shield, 
   Lock, Moon, HelpCircle, Save, Wallet, Sparkles, 
-  ShieldCheck, Globe, GraduationCap 
+  ShieldCheck, Globe, GraduationCap, MessageSquare, 
+  Tag, Heart, Info, Megaphone, CheckCircle
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -19,7 +20,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   const [avatar, setAvatar] = useState(user.avatar);
   const [upiId, setUpiId] = useState(user.upiId || '');
   const [aiEnabled, setAiEnabled] = useState(user.aiEnabled ?? true);
-  const [notifications, setNotifications] = useState(true);
+  
+  // Granular Notifications
+  const [notifs, setNotifs] = useState(user.notificationPrefs || {
+    messages: true,
+    bargains: true,
+    likes: true,
+    comments: true,
+    campusAlerts: true
+  });
+
   const [darkMode, setDarkMode] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -38,7 +48,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
 
   const handleSave = () => {
     setSaving(true);
-    // Simulate API call
     setTimeout(() => {
       onUpdateUser({
         ...user,
@@ -46,191 +55,175 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         college,
         avatar,
         upiId,
-        aiEnabled
+        aiEnabled,
+        notificationPrefs: notifs
       });
       setSaving(false);
       onBack();
-    }, 1200);
+    }, 1000);
   };
+
+  const toggleNotif = (key: keyof typeof notifs) => {
+    setNotifs(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const NotifToggle = ({ label, icon: Icon, active, onToggle, color }: any) => (
+    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
+      <div className="flex items-center space-x-3">
+        <div className={`p-2 rounded-xl bg-slate-50 ${active ? color : 'text-slate-300'}`}>
+          <Icon size={18} />
+        </div>
+        <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{label}</span>
+      </div>
+      <button 
+        onClick={onToggle}
+        className={`w-12 h-6 rounded-full p-1 transition-all duration-300 ${active ? 'bg-indigo-600' : 'bg-slate-200'}`}
+      >
+        <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300 ${active ? 'translate-x-6' : 'translate-x-0'}`} />
+      </button>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      <header className="px-4 py-4 bg-white border-b border-slate-100 flex items-center sticky top-0 z-40">
-        <button 
-          onClick={onBack} 
-          className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-900 rounded-full shadow-sm hover:bg-white active:scale-75 transition-all duration-300 ring-4 ring-slate-50 mr-4"
-        >
-          <ChevronLeft size={24} strokeWidth={3} />
-        </button>
-        <h1 className="text-xl font-black text-slate-900 tracking-tight">Settings</h1>
+      <header className="px-6 py-6 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center space-x-4">
+          <button onClick={onBack} className="p-3 bg-slate-100 rounded-2xl active:scale-90 transition-all">
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">Settings</h1>
+        </div>
+        <div className="flex items-center space-x-2">
+           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Live Sync</span>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 pb-32 hide-scrollbar">
         {/* Profile Identity Section */}
         <div className="flex flex-col items-center">
           <div className="relative group">
-            <div className="w-32 h-32 rounded-[42px] bg-white p-1.5 shadow-2xl ring-4 ring-indigo-50 overflow-hidden transition-transform group-hover:scale-105">
-              <img src={avatar} className="w-full h-full object-cover rounded-[38px]" alt="Profile" />
+            <div className="w-28 h-28 rounded-[38px] bg-white p-1.5 shadow-2xl ring-4 ring-indigo-50 overflow-hidden">
+              <img src={avatar} className="w-full h-full object-cover rounded-[34px]" alt="Profile" />
             </div>
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-3.5 rounded-2xl shadow-xl hover:bg-indigo-500 transition-all transform active:scale-90 border-4 border-white"
+              className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-3 rounded-xl shadow-xl border-4 border-white"
             >
-              <Camera size={20} />
+              <Camera size={16} />
             </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*"
-              onChange={handleFileChange} 
-            />
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
           </div>
-          <div className="mt-5 text-center">
-             <h2 className="text-lg font-black text-slate-900">{user.name}</h2>
-             <div className="flex items-center justify-center space-x-1.5 mt-1">
-                <div className="p-0.5 bg-emerald-100 text-emerald-600 rounded-md">
-                   <ShieldCheck size={12} fill="currentColor" className="text-emerald-50" />
-                </div>
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Verified Student Account</span>
-             </div>
+          <div className="mt-4 text-center">
+             <h2 className="text-base font-black text-slate-900 tracking-tight">{name}</h2>
+             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Campus ID: {user.id.slice(-6)}</p>
+          </div>
+        </div>
+
+        {/* Notifications Console */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Notification Channels</h3>
+            <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">Global Control</span>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            <NotifToggle label="Bargains & Deals" icon={Tag} active={notifs.bargains} onToggle={() => toggleNotif('bargains')} color="text-amber-500" />
+            <NotifToggle label="Direct Messages" icon={MessageSquare} active={notifs.messages} onToggle={() => toggleNotif('messages')} color="text-indigo-600" />
+            <NotifToggle label="Social Likes" icon={Heart} active={notifs.likes} onToggle={() => toggleNotif('likes')} color="text-rose-500" />
+            <NotifToggle label="New Comments" icon={Megaphone} active={notifs.comments} onToggle={() => toggleNotif('comments')} color="text-sky-500" />
+            <NotifToggle label="Campus Alerts" icon={Info} active={notifs.campusAlerts} onToggle={() => toggleNotif('campusAlerts')} color="text-emerald-500" />
           </div>
         </div>
 
         {/* Basic Information */}
         <div className="space-y-4">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Personal Details</h3>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Identity Details</h3>
           <div className="space-y-3">
-            <div className="group">
-              <div className="relative">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Name"
-                />
-              </div>
+            <div className="relative">
+              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+              <input
+                className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Profile Name"
+              />
             </div>
-
-            <div className="group">
-              <div className="relative">
-                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold"
-                  value={college}
-                  onChange={(e) => setCollege(e.target.value)}
-                  placeholder="Institution Name (e.g. IIT Delhi)"
-                />
-              </div>
+            <div className="relative">
+              <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+              <input
+                className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300"
+                value={college}
+                onChange={(e) => setCollege(e.target.value)}
+                placeholder="University Institution"
+              />
             </div>
           </div>
         </div>
 
-        {/* Payments Section */}
+        {/* AI Control Center */}
         <div className="space-y-4">
-           <div className="flex items-center justify-between ml-1">
-             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Payments & Payouts</h3>
-             <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Secure</span>
-           </div>
-           <div className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm space-y-4">
-              <div className="flex items-center space-x-4">
-                 <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                    <Wallet size={20} />
-                 </div>
-                 <div className="flex-1">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Your UPI ID</label>
-                    <input 
-                      className="w-full bg-slate-50/50 border-none p-0 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300"
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                      placeholder="username@upi"
-                    />
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* AI & Intelligence Section */}
-        <div className="space-y-4">
-           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Nexus AI Preferences</h3>
-           <div className="bg-slate-900 rounded-[32px] p-6 shadow-xl shadow-indigo-900/10 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                 <Sparkles size={80} />
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">AI Intelligence</h3>
+           <div className="bg-slate-900 rounded-[32px] p-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute -top-6 -right-6 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
+                 <Sparkles size={120} />
               </div>
               <div className="flex items-start justify-between relative z-10">
-                 <div className="space-y-1 max-w-[70%]">
-                    <h4 className="text-sm font-black flex items-center">
-                       Smart AI Negotiator
-                       <div className="ml-2 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></div>
+                 <div className="space-y-2 max-w-[75%]">
+                    <h4 className="text-white text-sm font-black flex items-center uppercase tracking-wider">
+                       Nexus Gemini Pilot
+                       <div className="ml-2 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
                     </h4>
-                    <p className="text-[10px] text-slate-400 leading-relaxed font-medium">Allow Gemini to assist with fair price bargaining suggestions during chats.</p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed font-bold uppercase tracking-wide">
+                      Enables real-time price negotiation assistant & smart listing analysis.
+                    </p>
                  </div>
                  <button 
                   onClick={() => setAiEnabled(!aiEnabled)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${aiEnabled ? 'bg-indigo-500' : 'bg-slate-700'}`}
+                  className={`w-12 h-6 rounded-full p-1 transition-all duration-500 ${aiEnabled ? 'bg-indigo-500' : 'bg-slate-700'}`}
                  >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${aiEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-500 ${aiEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                  </button>
               </div>
            </div>
         </div>
 
-        {/* System Settings */}
+        {/* Appearance & More */}
         <div className="space-y-4">
-           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">System</h3>
-           <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between p-5 border-b border-slate-50">
-                 <div className="flex items-center space-x-4">
-                    <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl"><Bell size={18} /></div>
-                    <span className="text-sm font-bold text-slate-700">Push Notifications</span>
-                 </div>
-                 <button 
-                  onClick={() => setNotifications(!notifications)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${notifications ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                 >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notifications ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                 </button>
-              </div>
-
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">System Preferences</h3>
+           <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm divide-y divide-slate-50">
               <div className="flex items-center justify-between p-5">
                  <div className="flex items-center space-x-4">
                     <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl"><Moon size={18} /></div>
-                    <span className="text-sm font-bold text-slate-700">Dark Appearance</span>
+                    <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Dark Experience</span>
                  </div>
-                 <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${darkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                 >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                 <button onClick={() => setDarkMode(!darkMode)} className={`w-12 h-6 rounded-full p-1 transition-all ${darkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0'}`} />
                  </button>
+              </div>
+              <div className="flex items-center justify-between p-5">
+                 <div className="flex items-center space-x-4">
+                    <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl"><Globe size={18} /></div>
+                    <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Public Directory</span>
+                 </div>
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               </div>
            </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex flex-col space-y-3">
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-5 bg-slate-900 text-white font-black rounded-[28px] shadow-2xl flex items-center justify-center space-x-2 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {saving ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <Save size={18} />
-                <span className="uppercase tracking-[0.1em] text-xs">Update Profile</span>
-              </>
-            )}
-          </button>
-          
-          <div className="flex items-center justify-center space-x-6 py-4">
-             <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors">Privacy Policy</button>
-             <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
-             <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors">Safety Tips</button>
-          </div>
-        </div>
+        {/* Action Button */}
+        <button 
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-5 bg-indigo-600 text-white font-black rounded-[28px] shadow-[0_15px_40px_-5px_rgba(79,70,229,0.4)] flex items-center justify-center space-x-3 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {saving ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <CheckCircle size={20} />
+              <span className="uppercase tracking-[0.2em] text-xs">Save Environment</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

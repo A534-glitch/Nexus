@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, Story, User, Comment } from '../types';
 import { 
   Heart, MessageCircle, Share2, Plus, GraduationCap, 
-  Bell, Send, X, ArrowUpRight, Sparkles, Camera, Loader2
+  Bell, Send, X, ArrowUpRight, Sparkles, Camera, Loader2, Users, ShoppingCart, Key
 } from 'lucide-react';
 import { generateSmartComment } from '../services/gemini';
 
@@ -22,6 +22,8 @@ interface FeedViewProps {
   onNavigateToNotifications: () => void;
   onNavigateToUserProfile: (user: User) => void;
   onAddStoryClick: () => void;
+  onQuickBuy?: (product: Product) => void;
+  onQuickRent?: (product: Product) => void;
 }
 
 const StoryViewer = ({ story, onClose, onLike, onShare }: { story: Story, onClose: () => void, onLike: () => void, onShare: () => void }) => {
@@ -73,7 +75,7 @@ const StoryViewer = ({ story, onClose, onLike, onShare }: { story: Story, onClos
   );
 };
 
-const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) => {
+const ProductCard = ({ product, onLike, onShare, onComment, onUserClick, onQuickBuy, onQuickRent }: any) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -109,9 +111,12 @@ const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) 
 
       <div className="aspect-square bg-slate-100 relative group overflow-hidden">
         <img src={product.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-        <div className="absolute bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-black italic shadow-xl flex items-center space-x-2">
-          <span>₹{product.price.toLocaleString('en-IN')}</span>
-          <ArrowUpRight size={14} className="text-indigo-400" />
+        <div className="absolute top-4 right-4 flex flex-col space-y-2">
+           {product.canRent && (
+             <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center">
+                <Key size={10} className="mr-1" /> Rent Available
+             </div>
+           )}
         </div>
       </div>
 
@@ -126,20 +131,36 @@ const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) 
               <MessageCircle size={24} className={`transition-all ${showComments ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-400'}`} />
               <span className="text-xs font-black text-slate-900">{product.comments.length}</span>
             </button>
-            {/* Enabled Share Button with Counter */}
             <button onClick={onShare} className="flex items-center space-x-2 group active:scale-90 transition-transform">
               <Share2 size={24} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
               <span className="text-xs font-black text-slate-900 transition-all group-hover:text-indigo-600">{product.shares || 0}</span>
             </button>
           </div>
-          <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">
-            {product.category}
-          </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1 mb-4">
           <h3 className="text-sm font-black text-slate-900 tracking-tight">{product.title}</h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">{product.description}</p>
+        </div>
+
+        {/* Transaction Buttons */}
+        <div className="flex space-x-3">
+           <button 
+            onClick={() => onQuickBuy(product)}
+            className="flex-1 bg-slate-900 text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-slate-200"
+           >
+              <ShoppingCart size={14} />
+              <span>Buy ₹{product.price.toLocaleString('en-IN')}</span>
+           </button>
+           {product.canRent && (
+             <button 
+              onClick={() => onQuickRent(product)}
+              className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 active:scale-95 transition-all"
+             >
+                <Key size={14} />
+                <span>Rent ₹{(product.rentPrice || Math.floor(product.price * 0.1)).toLocaleString('en-IN')}</span>
+             </button>
+           )}
         </div>
 
         {showComments && (
@@ -192,7 +213,8 @@ const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) 
 
 const FeedView: React.FC<FeedViewProps> = ({ 
   products, stories, onLike, onLikeStory, onShare, onShareStory, onComment, 
-  onNavigateToChat, onNavigateToNotifications, onNavigateToUserProfile, onAddStoryClick 
+  onNavigateToChat, onNavigateToNotifications, onNavigateToUserProfile, onAddStoryClick,
+  onQuickBuy = () => {}, onQuickRent = () => {}
 }) => {
   const [activeStory, setActiveStory] = useState<Story | null>(null);
 
@@ -207,17 +229,31 @@ const FeedView: React.FC<FeedViewProps> = ({
         />
       )}
 
-      <header className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-xl border-b border-slate-200 z-[90]">
-        <div className="flex items-center space-x-4">
-          <button onClick={onAddStoryClick} className="p-3 bg-slate-100 rounded-2xl text-slate-600"><Camera size={22} /></button>
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg"><GraduationCap /></div>
-            <h1 className="text-2xl font-black tracking-tight">Nexus</h1>
+      <header className="px-6 pt-12 pb-6 flex flex-col space-y-4 sticky top-0 bg-white/90 backdrop-blur-xl border-b border-slate-200 z-[90]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button onClick={onAddStoryClick} className="p-3 bg-slate-100 rounded-2xl text-slate-600"><Camera size={22} /></button>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg"><GraduationCap /></div>
+              <h1 className="text-2xl font-black tracking-tight">Nexus</h1>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button onClick={onNavigateToNotifications} className="p-3 bg-slate-100 rounded-2xl relative"><Bell size={20}/><div className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" /></button>
+            <button onClick={onNavigateToChat} className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl"><MessageCircle size={20}/></button>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={onNavigateToNotifications} className="p-3 bg-slate-100 rounded-2xl relative"><Bell size={20}/><div className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" /></button>
-          <button onClick={onNavigateToChat} className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl"><MessageCircle size={20}/></button>
+        
+        {/* Global Activity Ticker */}
+        <div className="flex items-center space-x-2 bg-indigo-50/50 py-1.5 px-4 rounded-full self-start">
+           <div className="flex -space-x-2">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="w-5 h-5 rounded-full border-2 border-white bg-slate-200" />
+              ))}
+           </div>
+           <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest flex items-center">
+             <Users size={10} className="mr-1" /> Campus Network Online
+           </span>
         </div>
       </header>
 
@@ -244,6 +280,8 @@ const FeedView: React.FC<FeedViewProps> = ({
             onLike={() => onLike(p.id)} 
             onShare={() => onShare(p.id)}
             onComment={onComment}
+            onQuickBuy={onQuickBuy}
+            onQuickRent={onQuickRent}
             onUserClick={() => onNavigateToUserProfile({ id: p.sellerId, name: p.sellerName, avatar: '', college: '' } as User)}
           />
         ))}

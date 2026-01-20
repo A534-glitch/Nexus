@@ -4,7 +4,8 @@ import { Product } from '../types';
 import { 
   Search, X, Sparkles, GraduationCap, 
   Bookmark, ArrowUpRight, Volume2, Loader2, 
-  Handshake, LayoutGrid, List, Grid3X3, Share2 
+  Handshake, LayoutGrid, List, Grid3X3, Share2,
+  AlertCircle, ShieldCheck
 } from 'lucide-react';
 import { generateSpeech, decodeAudio } from '../services/gemini';
 
@@ -102,32 +103,55 @@ const MarketView: React.FC<MarketViewProps> = ({ products, onBargain, onBuyNow, 
 
       {selectedProduct && (
         <div className="fixed inset-0 z-[100] bg-black/70 flex items-end">
-          <div className="bg-white w-full h-[90vh] rounded-t-[48px] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-500">
+          <div className="bg-white w-full h-[92vh] rounded-t-[48px] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-500">
              <div className="relative aspect-video">
                 <img src={selectedProduct.image} className="w-full h-full object-cover" alt="" />
-                <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 p-3 bg-black/40 text-white rounded-full"><X size={24}/></button>
-                <button onClick={() => onShare(selectedProduct.id)} className="absolute top-6 left-6 p-3 bg-black/40 text-white rounded-full"><Share2 size={24}/></button>
+                <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 p-3 bg-black/40 backdrop-blur-md text-white rounded-full"><X size={24}/></button>
+                <button onClick={() => onShare(selectedProduct.id)} className="absolute top-6 left-6 p-3 bg-black/40 backdrop-blur-md text-white rounded-full"><Share2 size={24}/></button>
+                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md px-5 py-2 rounded-2xl shadow-xl">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Owner Verified</p>
+                   <p className="text-xs font-black text-slate-900 leading-none">{selectedProduct.sellerName}</p>
+                </div>
              </div>
-             <div className="flex-1 overflow-y-auto p-8 pb-32 space-y-8">
+             
+             <div className="flex-1 overflow-y-auto p-8 pb-32 space-y-8 hide-scrollbar">
                 <div className="flex justify-between items-start">
                    <div className="space-y-2">
-                      <h2 className="text-3xl font-black text-slate-900 leading-tight">{selectedProduct.title}</h2>
-                      <p className="text-indigo-600 font-bold uppercase text-[10px] tracking-widest">{selectedProduct.category} Resources</p>
+                      <h2 className="text-3xl font-black text-slate-900 leading-tight tracking-tighter">{selectedProduct.title}</h2>
+                      <div className="flex items-center space-x-3">
+                         <span className="text-indigo-600 font-black uppercase text-[10px] tracking-widest px-3 py-1 bg-indigo-50 rounded-lg">{selectedProduct.category} Resource</span>
+                         <div className="flex items-center text-emerald-600 text-[10px] font-black uppercase">
+                            <ShieldCheck size={14} className="mr-1" /> Campus Protected
+                         </div>
+                      </div>
                    </div>
-                   <button onClick={() => handleSpeech(selectedProduct.description)} className="p-4 bg-slate-100 rounded-2xl text-indigo-600">
+                   <button onClick={() => handleSpeech(selectedProduct.description)} className="p-4 bg-slate-100 rounded-2xl text-indigo-600 hover:bg-indigo-50 transition-colors">
                      {isSpeaking ? <Loader2 className="animate-spin" /> : <Volume2 />}
                    </button>
                 </div>
-                <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-200 flex items-center justify-between">
-                   <div>
-                     <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Asking Price</p>
-                     <h4 className="text-4xl font-black text-slate-900">₹{selectedProduct.price.toLocaleString()}</h4>
-                   </div>
-                   <button onClick={() => onBuyNow(selectedProduct)} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs">Buy Now</button>
+
+                <div className="space-y-4">
+                   <p className="text-sm font-medium text-slate-500 leading-relaxed italic border-l-4 border-slate-100 pl-4">
+                     "{selectedProduct.description}"
+                   </p>
                 </div>
-                <button onClick={() => onBargain(selectedProduct)} className="w-full py-6 bg-slate-900 text-white rounded-3xl font-black uppercase text-xs tracking-widest flex items-center justify-center space-x-2">
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Buy Ownership</p>
+                      <h4 className="text-2xl font-black text-slate-900 tracking-tighter mb-4">₹{selectedProduct.price.toLocaleString()}</h4>
+                      <button onClick={() => onBuyNow(selectedProduct)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all">Buy Now</button>
+                   </div>
+                   <div className="bg-indigo-50 p-6 rounded-[32px] border border-indigo-100">
+                      <p className="text-[9px] font-black text-indigo-400 uppercase mb-2">Rent (Per Sem)</p>
+                      <h4 className="text-2xl font-black text-indigo-900 tracking-tighter mb-4">₹{Math.floor(selectedProduct.price * 0.1).toLocaleString()}</h4>
+                      <button onClick={() => onRentNow(selectedProduct)} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-all">Rent Node</button>
+                   </div>
+                </div>
+
+                <button onClick={() => onBargain(selectedProduct)} className="w-full py-6 bg-white border-2 border-slate-900 text-slate-900 rounded-[32px] font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center space-x-3 active:scale-[0.98] transition-all">
                    <Handshake size={20} />
-                   <span>Start Real-time Negotiation</span>
+                   <span>Negotiate with Seller</span>
                 </button>
              </div>
           </div>

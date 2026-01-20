@@ -18,16 +18,6 @@ import UserProfileView from './views/UserProfileView';
 import BottomNav from './components/BottomNav';
 import { Share2, CheckCircle } from 'lucide-react';
 
-const MOCK_USER: User = {
-  id: 'user1',
-  name: 'Arjun Sharma',
-  avatar: 'https://picsum.photos/seed/arjun/200',
-  college: 'IIT Delhi',
-  isVerified: true,
-  upiId: 'arjun.nexus@upi',
-  aiEnabled: true
-};
-
 const INITIAL_STORIES: Story[] = [
   { id: 's1', userId: 'user2', userName: 'Priya', userAvatar: 'https://picsum.photos/seed/Priya/100', image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=600&auto=format&fit=crop', timestamp: Date.now() - 3600000, isLiked: false, likes: 12 },
   { id: 's2', userId: 'user3', userName: 'Rahul', userAvatar: 'https://picsum.photos/seed/Rahul/100', image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=600&auto=format&fit=crop', timestamp: Date.now() - 7200000, isLiked: false, likes: 8 },
@@ -41,6 +31,8 @@ const INITIAL_PRODUCTS: Product[] = [
     title: 'iPad Pro 2022 - Like New',
     description: 'Barely used iPad Pro, perfect for digital note-taking. Includes Apple Pencil Gen 2.',
     price: 45000,
+    rentPrice: 4500,
+    canRent: true,
     image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=800&auto=format&fit=crop',
     category: 'Gadget',
     likedBy: ['Rahul Varma'],
@@ -58,6 +50,8 @@ const INITIAL_PRODUCTS: Product[] = [
     title: 'Organic Chemistry Notes',
     description: 'Complete Semester 3 notes. Hand-written with color coding.',
     price: 500,
+    rentPrice: 100,
+    canRent: true,
     image: 'https://images.unsplash.com/photo-1453749024858-4bca89bd9edc?q=80&w=800&auto=format&fit=crop',
     category: 'Notebook',
     likedBy: ['Priya Patel'],
@@ -73,15 +67,21 @@ const INITIAL_PRODUCTS: Product[] = [
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('LOGIN');
+  
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('nexus_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
-  const [stories, setStories] = useState<Story[]>(() => {
-    const saved = localStorage.getItem('nexus_stories');
-    return saved ? JSON.parse(saved) : INITIAL_STORIES;
+    try {
+      const saved = localStorage.getItem('nexus_products');
+      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    } catch { return INITIAL_PRODUCTS; }
   });
   
+  const [stories, setStories] = useState<Story[]>(() => {
+    try {
+      const saved = localStorage.getItem('nexus_stories');
+      return saved ? JSON.parse(saved) : INITIAL_STORIES;
+    } catch { return INITIAL_STORIES; }
+  });
+
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [viewedUser, setViewedUser] = useState<User | null>(null);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
@@ -91,7 +91,6 @@ const App: React.FC = () => {
   const [uploadMode, setUploadMode] = useState<'PRODUCT' | 'STORY'>('PRODUCT');
   const [toast, setToast] = useState<string | null>(null);
 
-  // Persistence Effects
   useEffect(() => {
     localStorage.setItem('nexus_products', JSON.stringify(products));
   }, [products]);
@@ -114,10 +113,32 @@ const App: React.FC = () => {
   };
 
   const handleLogin = (name: string) => {
-    const newUser = { ...MOCK_USER, id: `user_${Date.now()}`, name };
-    setCurrentUser(newUser);
-    localStorage.setItem('nexus_user', JSON.stringify(newUser));
+    const existingUsers = JSON.parse(localStorage.getItem('nexus_registry') || '[]');
+    let user = existingUsers.find((u: User) => u.name.toLowerCase() === name.toLowerCase());
+    
+    if (!user) {
+      user = {
+        id: `user_${Date.now()}`,
+        name,
+        avatar: `https://picsum.photos/seed/${name}/200`,
+        college: 'Nexus University',
+        isVerified: true,
+        upiId: `${name.toLowerCase()}.nexus@upi`,
+        aiEnabled: true,
+        followers: Math.floor(Math.random() * 500),
+        following: Math.floor(Math.random() * 200),
+        postsCount: 0,
+        notificationPrefs: {
+          messages: true, bargains: true, likes: true, comments: true, campusAlerts: true
+        }
+      };
+      localStorage.setItem('nexus_registry', JSON.stringify([...existingUsers, user]));
+    }
+    
+    setCurrentUser(user);
+    localStorage.setItem('nexus_user', JSON.stringify(user));
     setCurrentView('FEED');
+    showToast(`Welcome to Campus, ${name}! 👋`);
   };
 
   const handleLogout = () => {
@@ -129,18 +150,21 @@ const App: React.FC = () => {
   const handleUpdateUser = (updatedUser: User) => {
     setCurrentUser(updatedUser);
     localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
+    const registry = JSON.parse(localStorage.getItem('nexus_registry') || '[]');
+    localStorage.setItem('nexus_registry', JSON.stringify(registry.map((u: User) => u.id === updatedUser.id ? updatedUser : u)));
+    showToast("Identity updated successfully! ✨");
   };
 
   const handleAddProduct = (newProduct: Product) => {
     setProducts(prev => [newProduct, ...prev]);
     setCurrentView('MARKET');
-    showToast("Product listed successfully! 🚀");
+    showToast("Listing published to all peers! 🚀");
   };
 
   const handleAddStory = (newStory: Story) => {
     setStories(prev => [newStory, ...prev]);
     setCurrentView('FEED');
-    showToast("Story shared with peers! ✨");
+    showToast("Story shared with the campus! ✨");
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -259,14 +283,21 @@ const App: React.FC = () => {
         onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')}
         onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
         onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }}
+        onQuickBuy={(product) => { setCheckoutProduct(product); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
+        onQuickRent={(product) => { setCheckoutProduct(product); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
       />;
-      case 'EXPLORE': return <ExploreView products={products} onSelectProduct={(p) => { setCheckoutProduct(p); setCurrentView('MARKET'); }} />;
+      case 'EXPLORE': return <ExploreView 
+        products={products} 
+        onSelectProduct={(p) => { setCheckoutProduct(p); setCurrentView('MARKET'); }}
+        onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
+        onNavigateToChat={(userId) => { setSelectedChatId(userId); setCurrentView('CHAT_DETAIL'); }}
+      />;
       case 'MARKET': return <MarketView 
         products={products} 
         onToggleWishlist={toggleWishlist}
         onTogglePin={togglePin}
         onShare={(id) => handleShare(id, 'PRODUCT')}
-        onBargain={(product, offer) => { setSelectedChatId('chat_with_' + product.sellerId); setInitialOffer(offer); setCurrentView('CHAT_DETAIL'); }} 
+        onBargain={(product, offer) => { setSelectedChatId(product.sellerId); setInitialOffer(offer); setCurrentView('CHAT_DETAIL'); }} 
         onBuyNow={(product) => { setCheckoutProduct(product); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} 
         onRentNow={(product) => { setCheckoutProduct(product); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
       />;
@@ -274,7 +305,7 @@ const App: React.FC = () => {
       case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} initialOffer={initialOffer} onBack={() => { setCurrentView('CHAT'); setInitialOffer(undefined); }} currentUser={currentUser!} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} />;
       case 'AI_CHAT': return <AiChatView currentUser={currentUser!} onBack={() => setCurrentView('CHAT')} />;
       case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
-      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onShareApp={handleShareApp} />;
+      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onShareApp={handleShareApp} onUpdateUser={handleUpdateUser} />;
       case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={handleUpdateUser} />;
       case 'PAYMENT': return <PaymentView product={checkoutProduct!} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={handlePurchaseComplete} />;
       case 'WISHLIST': return <ProductListView title="My Wishlist" products={products.filter(p => p.isWishlisted)} onBack={() => setCurrentView('PROFILE')} onAction={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} onShare={(id) => handleShare(id, 'PRODUCT')} actionLabel="Buy" />;

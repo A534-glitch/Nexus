@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle, ShieldCheck, MapPin, Scale, Ban, Lock, X } from 'lucide-react';
+import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle, ShieldCheck, MapPin, Scale, Ban, Lock, X, Key } from 'lucide-react';
 import { analyzeProductImage } from '../services/gemini';
 import { Product, User, Story } from '../types';
 
@@ -122,6 +122,8 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [rentPrice, setRentPrice] = useState('');
+  const [canRent, setCanRent] = useState(false);
   const [category, setCategory] = useState<'Notebook' | 'Gadget' | 'Stationery' | 'Other'>('Gadget');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
@@ -150,6 +152,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
       setTitle(result.title || '');
       setDescription(result.description || '');
       setPrice(result.suggestedPrice?.toString() || '');
+      setRentPrice(Math.floor((result.suggestedPrice || 0) * 0.15).toString());
     }
     setIsAnalyzing(false);
   };
@@ -178,6 +181,8 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         title,
         description,
         price: Number(price),
+        rentPrice: canRent ? Number(rentPrice) : undefined,
+        canRent,
         image,
         category,
         likes: 0,
@@ -191,7 +196,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
     setIsSafetyModalOpen(false);
   };
 
-  const isFormValid = postType === 'STORY' ? !!image : (!!image && !!title && !!price);
+  const isFormValid = postType === 'STORY' ? !!image : (!!image && !!title && !!price && (!canRent || !!rentPrice));
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative">
@@ -317,7 +322,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
                   </select>
                 </div>
                 <div className="group">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Price</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Sale Price</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-900 font-black">₹</span>
                     <input
@@ -332,13 +337,50 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
                 </div>
               </div>
 
+              {/* Rental Toggle Section */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                       <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                          <Key size={18} />
+                       </div>
+                       <div>
+                          <p className="text-xs font-black text-slate-900">Enable Campus Rental</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Allow students to rent per sem</p>
+                       </div>
+                    </div>
+                    <button 
+                      onClick={() => setCanRent(!canRent)}
+                      className={`w-12 h-6 rounded-full p-1 transition-all ${canRent ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    >
+                       <div className={`w-4 h-4 bg-white rounded-full transition-transform ${canRent ? 'translate-x-6' : 'translate-x-0'}`} />
+                    </button>
+                 </div>
+                 {canRent && (
+                   <div className="animate-in slide-in-from-top-2 duration-300 pt-2 border-t border-slate-50">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Rent Price (Per Sem)</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-black">₹</span>
+                        <input
+                          required
+                          type="number"
+                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-8 pr-5 text-sm focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold"
+                          placeholder="Suggested: ₹500"
+                          value={rentPrice}
+                          onChange={(e) => setRentPrice(e.target.value)}
+                        />
+                      </div>
+                   </div>
+                 )}
+              </div>
+
               <div className="group">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Why sell this?</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Description</label>
                 <textarea
                   required
                   rows={3}
                   className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold resize-none"
-                  placeholder="Condition, usage, why you're selling..."
+                  placeholder="Condition, usage, why you're selling/renting..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />

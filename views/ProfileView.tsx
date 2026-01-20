@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { User, Product } from '../types';
 import { 
   Settings, ShoppingBag, Bookmark, LogOut, ChevronRight, 
   Award, Package, Clock, CheckCircle, Share2, Users, 
   ShieldCheck, Info, X, MapPin, Scale, Lock, Ban, Heart, Zap,
-  GraduationCap
+  GraduationCap, Camera, Loader2
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -16,6 +16,7 @@ interface ProfileViewProps {
   onWishlist: () => void;
   onManageListings: () => void;
   onShareApp: () => void;
+  onUpdateUser: (user: User) => void;
 }
 
 const LegalModal = ({ title, type, onClose }: { title: string, type: 'SAFETY' | 'PRIVACY', onClose: () => void }) => {
@@ -136,8 +137,10 @@ const LegalModal = ({ title, type, onClose }: { title: string, type: 'SAFETY' | 
   );
 };
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, onSettings, onWishlist, onManageListings, onShareApp }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, onSettings, onWishlist, onManageListings, onShareApp, onUpdateUser }) => {
   const [modalContent, setModalContent] = useState<{ title: string, type: 'SAFETY' | 'PRIVACY' } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stats = [
     { label: 'Selling', value: '12', icon: ShoppingBag },
@@ -152,6 +155,24 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, 
     { label: 'Payments', icon: CheckCircle, onClick: () => {}, color: 'text-emerald-500' },
     { label: 'Invite Peers', icon: Share2, onClick: onShareApp, color: 'text-sky-500' },
   ];
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const newAvatar = reader.result as string;
+        onUpdateUser({ ...user, avatar: newAvatar });
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] pb-32">
@@ -176,14 +197,29 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, 
         </div>
 
         <div className="flex flex-col items-center text-center">
-           <div className="relative mb-6">
-              <div className="w-32 h-32 rounded-[42px] p-1.5 bg-gradient-to-tr from-indigo-500 via-purple-500 to-rose-500 shadow-2xl">
-                 <div className="w-full h-full rounded-[38px] bg-white p-1">
+           <div className="relative mb-6 group cursor-pointer" onClick={handlePhotoClick}>
+              <div className="w-32 h-32 rounded-[42px] p-1.5 bg-gradient-to-tr from-indigo-500 via-purple-500 to-rose-500 shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                 <div className="w-full h-full rounded-[38px] bg-white p-1 relative overflow-hidden">
                     <img src={user.avatar} className="w-full h-full rounded-[34px] object-cover" alt="" />
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-[34px]">
+                        <Loader2 className="text-white animate-spin" size={24} />
+                      </div>
+                    )}
                  </div>
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-xl border-4 border-white">
-                 <ShieldCheck size={18} />
+              <div className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-2.5 rounded-xl shadow-xl border-4 border-white group-hover:bg-indigo-700 transition-colors">
+                 <Camera size={16} />
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+              />
+              <div className="absolute -top-2 -left-2 bg-emerald-500 text-white p-1.5 rounded-lg shadow-lg border-2 border-white scale-0 group-hover:scale-100 transition-transform">
+                 <ShieldCheck size={12} strokeWidth={3} />
               </div>
            </div>
 
