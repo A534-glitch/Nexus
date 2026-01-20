@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 const getAIClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -7,7 +7,7 @@ const getAIClient = () => {
 
 export const analyzeProductImage = async (base64Image: string) => {
   const ai = getAIClient();
-  const prompt = "Analyze this image of a student product (gadget or notebook). Suggest a professional product title, a detailed description highlighting its features, and a reasonable price in Indian Rupees (INR) for a student marketplace. Return JSON.";
+  const prompt = "Analyze this image of a student product. Suggest a professional title, a detailed description, and a reasonable price in INR. Return JSON.";
   
   try {
     const response = await ai.models.generateContent({
@@ -41,40 +41,58 @@ export const analyzeProductImage = async (base64Image: string) => {
 
 export const getBargainAdvice = async (productTitle: string, originalPrice: number, userOffer: number) => {
   const ai = getAIClient();
-  const prompt = `A student wants to buy "${productTitle}" originally priced at ₹${originalPrice}. Their offer is ₹${userOffer}. Provide 3 short, professional bargaining points or a counter-offer suggestion to help them negotiate fairly.`;
+  const prompt = `Product: "${productTitle}", Price: ₹${originalPrice}. Student Offer: ₹${userOffer}. Provide 3 short bargaining points. If the offer is more than 30% lower than the price, warn the user politely.`;
   
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 0 }
-      }
     });
     return response.text;
   } catch (error) {
-    console.error("Gemini Bargain Error:", error);
-    return "The AI assistant is currently unavailable. Try a friendly negotiation based on the condition of the item!";
+    return "Try suggesting a price closer to the market value for a faster deal!";
   }
 };
 
-export const getChatResponse = async (context: string, lastMessage: string, senderName: string) => {
+export const generateSpeech = async (text: string) => {
   const ai = getAIClient();
-  const prompt = `You are ${senderName}, a university student selling an item on Nexus. A peer sent you this message: "${lastMessage}".
-  The context of the chat is: ${context}.
-  Respond as a friendly, professional student. Keep it short (max 2 sentences) and helpful.`;
-  
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: `Narrate this campus resource description cheerfully: ${text}` }] }],
       config: {
-        thinkingConfig: { thinkingBudget: 0 }
-      }
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
     });
-    return response.text;
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64Audio) {
+      return base64Audio;
+    }
   } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    return "Sure! Let me check and get back to you.";
+    console.error("TTS Error:", error);
   }
+  return null;
+};
+
+export const decodeAudio = async (base64Data: string): Promise<AudioBuffer> => {
+  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  
+  const dataInt16 = new Int16Array(bytes.buffer);
+  const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
+  const channelData = buffer.getChannelData(0);
+  for (let i = 0; i < dataInt16.length; i++) {
+    channelData[i] = dataInt16[i] / 32768.0;
+  }
+  return buffer;
 };

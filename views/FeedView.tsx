@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Product, Story, Comment, User } from '../types';
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, X, Link as LinkIcon, Sparkles, Plus, GraduationCap, User as UserIcon, Bell, Smile, Copy, Check, Search, ChevronRight, Trash2, AlertTriangle, UserPlus, UserCheck } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Product, Story, User } from '../types';
+import { Heart, MessageCircle, Share2, Plus, GraduationCap, Bell, Search, Zap, ArrowUpRight, Sparkles, Filter, Layers, X, Flame, Play } from 'lucide-react';
 
 interface FeedViewProps {
   currentUser: User;
@@ -11,464 +11,331 @@ interface FeedViewProps {
   onLikeStory: (storyId: string) => void;
   onComment: (productId: string, text: string) => void;
   onShare: (productId: string) => void;
-  onDeleteProduct: (id: string) => void;
-  onDeleteStory: (id: string) => void;
+  // Added missing delete props to resolve TS error in App.tsx
+  onDeleteProduct: (productId: string) => void;
+  onDeleteStory: (storyId: string) => void;
   onNavigateToChat: () => void;
   onNavigateToNotifications: () => void;
   onNavigateToUserProfile: (user: User) => void;
   onAddStoryClick: () => void;
 }
 
-const MOCK_ACCOUNTS: User[] = [
-  { id: 'u101', name: 'Arjun Mehra', avatar: 'https://picsum.photos/seed/arjunm/100', college: 'IIT Delhi', isVerified: true, bio: "Tech enthusiast. Selling my old gear to fund my next build. 💻", followers: 450, following: 320 },
-  { id: 'user2', name: 'Priya Patel', avatar: 'https://picsum.photos/seed/Priya/100', college: 'SRCC Delhi', isVerified: true, bio: "Economics major. Finding new homes for my library of notes. 📚", followers: 1200, following: 800 },
-  { id: 'user3', name: 'Rahul Varma', avatar: 'https://picsum.photos/seed/Rahul/100', college: 'BITS Pilani', isVerified: false, bio: "Music and Marketing. 🎸 Always looking for vintage gadgets.", followers: 150, following: 140 },
-  { id: 'u104', name: 'Sana Varma', avatar: 'https://picsum.photos/seed/sanav/100', college: 'VIT Vellore', isVerified: true, bio: "Design student. Minimalism is the key. ✨", followers: 890, following: 400 },
-  { id: 'u105', name: 'Ishaan Khattar', avatar: 'https://picsum.photos/seed/ishaan/100', college: 'Delhi University', isVerified: false, bio: "Sports & History. 🏟️ Collector of rare books.", followers: 310, following: 290 },
-  { id: 'u106', name: 'Ananya Pandey', avatar: 'https://picsum.photos/seed/ananya/100', college: 'NIFT Mumbai', isVerified: true, bio: "Fashion & Lifestyle. 👗 Sharing my curated collection.", followers: 2400, following: 500 },
-  { id: 'u107', name: 'Vikram Singh', avatar: 'https://picsum.photos/seed/vikrams/100', college: 'IIT Bombay', isVerified: true, bio: "Mechanical Engineering. 🛠️ Selling lab equipment and gadgets.", followers: 560, following: 210 },
-  { id: 'u108', name: 'Megha Rao', avatar: 'https://picsum.photos/seed/megha/100', college: 'AIIMS Delhi', isVerified: true, bio: "Future Doctor. 🩺 Selling medical textbooks and anatomy notes.", followers: 1100, following: 450 },
-  { id: 'u109', name: 'Karthik S.', avatar: 'https://picsum.photos/seed/karthik/100', college: 'RVCE Bangalore', isVerified: false, bio: "Computer Science. 💻 Algorithm enthusiast.", followers: 420, following: 380 },
-  { id: 'u110', name: 'Sneha Kapur', avatar: 'https://picsum.photos/seed/sneha/100', college: 'LPU Jalandhar', isVerified: true, bio: "BBA student. 📈 Business strategist.", followers: 670, following: 540 },
-  { id: 'u111', name: 'Rohan Das', avatar: 'https://picsum.photos/seed/rohan/100', college: 'Jadavpur University', isVerified: false, bio: "Physics major. 🌌 Exploring the universe one note at a time.", followers: 290, following: 300 },
-  { id: 'u112', name: 'Zoya Ahmed', avatar: 'https://picsum.photos/seed/zoya/100', college: 'AMU Aligarh', isVerified: true, bio: "Architecture & Art. 🏛️ Selling drafting tools.", followers: 820, following: 410 },
-  { id: 'u113', name: 'Abhishek J.', avatar: 'https://picsum.photos/seed/abhishek/100', college: 'NLS Bangalore', isVerified: true, bio: "Law student. ⚖️ Prep for mock trials.", followers: 1500, following: 600 },
-];
+const StoryViewer = ({ story, onClose, onLike }: { story: Story, onClose: () => void, onLike: () => void }) => {
+  const [progress, setProgress] = useState(0);
 
-const ShareSheet = ({ product, onClose }: { product: Product, onClose: () => void }) => {
-  const shareUrl = window.location.origin;
-  const shareText = `Check out this ${product.title} for ₹${product.price} on Nexus! 🚀`;
-
-  const platforms = [
-    { 
-      name: 'WhatsApp', 
-      color: '#25D366', 
-      icon: <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>,
-      action: () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank')
-    },
-    { 
-      name: 'Instagram', 
-      color: '#E4405F', 
-      icon: <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4.162 4.162 0 110-8.324A4.162 4.162 0 0112 16zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>,
-      action: () => { navigator.clipboard.writeText(shareUrl); }
-    }
-  ];
-
-  return (
-    <div className="fixed inset-0 z-[200] flex flex-col justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white w-full rounded-t-[40px] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300 relative z-10 pb-12">
-        <div className="flex justify-center py-4">
-          <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
-        </div>
-        <div className="px-8 pb-6 text-center">
-          <h3 className="text-lg font-black text-slate-900 tracking-tight">Share to Campus</h3>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Spread the word about this deal</p>
-        </div>
-        <div className="grid grid-cols-2 gap-y-8 px-6 py-4">
-          {platforms.map((p) => (
-            <button 
-              key={p.name}
-              onClick={() => { p.action(); onClose(); }}
-              className="flex flex-col items-center space-y-2 group active:scale-90 transition-transform"
-            >
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all" style={{ backgroundColor: p.color + '15' }}>
-                <svg viewBox="0 0 24 24" className="w-8 h-8" style={{ fill: p.color }}>{p.icon}</svg>
-              </div>
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter">{p.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const CommentSheet = ({ product, onClose, onAddComment }: { product: Product, onClose: () => void, onAddComment: (text: string) => void }) => {
-  const [newComment, setNewComment] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newComment.trim()) {
-      onAddComment(newComment);
-      setNewComment('');
-    }
-  };
-  return (
-    <div className="fixed inset-0 z-[200] flex flex-col justify-end">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white w-full h-[70vh] rounded-t-[32px] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300 relative z-10">
-        <div className="flex justify-center py-3"><div className="w-10 h-1.5 bg-slate-200 rounded-full" /></div>
-        <div className="px-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-black text-slate-900">Comments</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-full transition-colors"><X size={24} className="text-slate-900" /></button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 hide-scrollbar">
-          {product.comments.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center opacity-40 text-center px-10">
-              <MessageCircle size={48} className="mb-4 text-slate-300" />
-              <p className="font-black text-slate-900">No comments yet</p>
-            </div>
-          ) : (
-            product.comments.map((comment) => (
-              <div key={comment.id} className="flex space-x-3 group">
-                <img src={`https://picsum.photos/seed/${comment.userName}/100`} className="w-9 h-9 rounded-full object-cover flex-shrink-0" alt="" />
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-black text-slate-900">{comment.userName}</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  <p className="text-sm text-slate-700 mt-1 leading-relaxed font-medium">{comment.text}</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="px-6 pt-4 pb-10 border-t border-slate-100 bg-white">
-          <form onSubmit={handleSubmit} className="flex items-center space-x-4">
-            <img src="https://picsum.photos/seed/arjun/100" className="w-9 h-9 rounded-full object-cover" alt="" />
-            <div className="flex-1 bg-slate-50 rounded-full px-4 py-2.5 flex items-center border border-slate-100 focus-within:border-indigo-500 transition-all">
-              <input ref={inputRef} type="text" placeholder="Add a comment..." className="flex-1 bg-transparent border-none text-sm font-medium focus:outline-none" value={newComment} onChange={(e) => setNewComment(e.target.value)} />
-            </div>
-            <button type="submit" disabled={!newComment.trim()} className="text-indigo-600 font-black text-sm uppercase tracking-widest disabled:opacity-30">Post</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ContextMenu = ({ isOwner, onDelete, onClose }: { isOwner: boolean, onDelete: () => void, onClose: () => void }) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  return (
-    <div className="absolute top-12 right-4 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in duration-200">
-      {!confirmDelete ? (
-        <div className="flex flex-col py-2">
-          {isOwner && (
-            <button 
-              onClick={() => setConfirmDelete(true)}
-              className="px-4 py-3 flex items-center space-x-3 text-rose-500 hover:bg-rose-50 transition-colors"
-            >
-              <Trash2 size={16} />
-              <span className="text-xs font-black uppercase tracking-widest">Delete Post</span>
-            </button>
-          )}
-          <button className="px-4 py-3 flex items-center space-x-3 text-slate-600 hover:bg-slate-50 transition-colors">
-            <AlertTriangle size={16} />
-            <span className="text-xs font-black uppercase tracking-widest">Report</span>
-          </button>
-        </div>
-      ) : (
-        <div className="p-4 space-y-3 bg-rose-50">
-          <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest leading-tight">Permanently delete this post from campus?</p>
-          <div className="flex space-x-2">
-            <button onClick={onDelete} className="flex-1 py-2 bg-rose-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">Yes</button>
-            <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 bg-white text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-rose-100">No</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const StoriesBar = ({ stories, onSelectStory, onAddStoryClick }: { stories: Story[], onSelectStory: (index: number) => void, onAddStoryClick: () => void }) => {
-  return (
-    <div className="flex space-x-4 px-4 py-4 overflow-x-auto hide-scrollbar bg-white border-b border-slate-50">
-      <div onClick={onAddStoryClick} className="flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group">
-        <div className="w-[68px] h-[68px] rounded-full border-2 border-slate-200 border-dashed flex items-center justify-center p-0.5 group-active:scale-95 transition-transform bg-slate-50">
-          <div className="w-full h-full rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><Plus size={24} strokeWidth={3} /></div>
-        </div>
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">My Story</span>
-      </div>
-      {stories.map((s, index) => (
-        <div key={s.id} className="flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group" onClick={() => onSelectStory(index)}>
-          <div className="w-[68px] h-[68px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] group-active:scale-95 transition-transform">
-            <div className="w-full h-full rounded-full bg-white p-[2px]">
-              <img src={s.userAvatar} className="w-full h-full rounded-full object-cover border border-slate-100" alt="" />
-            </div>
-          </div>
-          <span className="text-[10px] font-bold text-slate-700 max-w-[64px] truncate">{s.userName}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const FeedView: React.FC<FeedViewProps> = ({ currentUser, products, stories, onLike, onLikeStory, onComment, onShare, onDeleteProduct, onDeleteStory, onNavigateToChat, onNavigateToNotifications, onNavigateToUserProfile, onAddStoryClick }) => {
-  const [activeCommentProductId, setActiveCommentProductId] = useState<string | null>(null);
-  const [activeShareProductId, setActiveShareProductId] = useState<string | null>(null);
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-
-  const activeCommentProduct = products.find(p => p.id === activeCommentProductId);
-  const activeShareProduct = products.find(p => p.id === activeShareProductId);
-
-  // Search logic for Students and Products
-  const filteredStudents = searchQuery.trim() === '' 
-    ? [] 
-    : MOCK_ACCOUNTS.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  
-  const filteredProducts = searchQuery.trim() === ''
-    ? products
-    : products.filter(p => 
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-  const toggleFollow = (id: string) => {
-    setFollowingIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleUserClick = (userId: string, userName: string) => {
-    // Attempt to find full user data in MOCK_ACCOUNTS first
-    const foundUser = MOCK_ACCOUNTS.find(u => u.id === userId);
-    if (foundUser) {
-      onNavigateToUserProfile(foundUser);
-    } else {
-      // Fallback: Create minimal user object if not in mock accounts
-      onNavigateToUserProfile({
-        id: userId,
-        name: userName,
-        avatar: `https://picsum.photos/seed/${userName}/100`,
-        college: 'Campus Member'
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          onClose();
+          return 100;
+        }
+        return prev + 1;
       });
-    }
-  };
+    }, 50);
+    return () => clearInterval(timer);
+  }, [onClose]);
 
   return (
-    <div className="flex flex-col bg-[#fafafa] min-h-full pb-32">
-      {activeCommentProductId && activeCommentProduct && <CommentSheet product={activeCommentProduct} onClose={() => setActiveCommentProductId(null)} onAddComment={(text) => onComment(activeCommentProductId, text)} />}
-      {activeShareProductId && activeShareProduct && <ShareSheet product={activeShareProduct} onClose={() => setActiveShareProductId(null)} />}
+    <div className="fixed inset-0 z-[300] bg-black flex flex-col animate-in fade-in duration-300">
+      {/* Background Image with Blur for aspect fill */}
+      <div className="absolute inset-0 opacity-40">
+        <img src={story.image} className="w-full h-full object-cover blur-3xl scale-110" alt="" />
+      </div>
 
-      <header className="sticky top-0 z-[160] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-4 py-4">
-        <div className="flex items-center justify-between">
-          {!isSearchOpen ? (
-            <>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-xl shadow-slate-200"><GraduationCap size={22} className="text-white" strokeWidth={2.5} /></div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tighter italic">Nexus</h1>
-              </div>
-              <div className="flex items-center space-x-1">
-                <button 
-                  onClick={onNavigateToNotifications}
-                  className="p-2.5 hover:bg-slate-100 rounded-full relative"
-                >
-                  <Bell size={24} className="text-slate-900" />
-                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
-                </button>
-                <button onClick={onNavigateToChat} className="p-2.5 hover:bg-slate-100 rounded-full relative"><MessageCircle size={24} className="text-slate-900" /></button>
-                <button onClick={() => setIsSearchOpen(true)} className="p-2.5 hover:bg-slate-100 rounded-full"><Search size={24} className="text-slate-900" strokeWidth={2.5} /></button>
-              </div>
-            </>
-          ) : (
-            <div className="w-full flex items-center space-x-3">
-               <div className="flex-1 relative">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                 <input autoFocus type="text" placeholder="Search campus..." className="w-full bg-slate-100 border-none rounded-2xl py-3 pl-11 pr-10 text-sm font-bold outline-none" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-               </div>
-               <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-xs font-black text-indigo-600 uppercase tracking-widest">Cancel</button>
+      <div className="relative flex-1 flex flex-col max-w-md mx-auto w-full bg-slate-900 overflow-hidden md:rounded-[40px] shadow-2xl">
+        <img src={story.image} className="w-full h-full object-cover" alt="" />
+
+        {/* Top Controls */}
+        <div className="absolute top-0 inset-x-0 p-6 pt-10 bg-gradient-to-b from-black/60 to-transparent">
+          {/* Progress Bar */}
+          <div className="flex space-x-1 mb-6">
+            <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-full bg-white transition-all duration-100 ease-linear" style={{ width: `${progress}%` }} />
             </div>
-          )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full border-2 border-white/50 p-0.5">
+                <img src={story.userAvatar} className="w-full h-full rounded-full object-cover" alt="" />
+              </div>
+              <div>
+                <h4 className="text-white text-sm font-black">{story.userName}</h4>
+                <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Campus Story</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 bg-white/10 backdrop-blur-md rounded-full text-white">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Interactions */}
+        <div className="absolute bottom-0 inset-x-0 p-8 pb-12 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-4">
+              <p className="text-white/60 text-xs font-medium">Reply to {story.userName}...</p>
+            </div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onLike(); }}
+              className={`p-4 rounded-2xl transition-all active:scale-75 ${story.isLiked ? 'bg-rose-500 text-white' : 'bg-white/10 text-white backdrop-blur-md'}`}
+            >
+              <Heart size={24} fill={story.isLiked ? 'white' : 'none'} />
+            </button>
+            <button className="p-4 bg-white/10 backdrop-blur-md rounded-2xl text-white">
+              <Share2 size={24} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FeedView: React.FC<FeedViewProps> = ({ 
+  currentUser, products, stories, onLike, onLikeStory, onShare, 
+  // Added missing delete props to resolve TS error in App.tsx
+  onDeleteProduct, onDeleteStory,
+  onNavigateToChat, onNavigateToNotifications, 
+  onNavigateToUserProfile, onAddStoryClick 
+}) => {
+  const [focalMode, setFocalMode] = useState<'STUDY' | 'LIFE' | 'VIBE'>('STUDY');
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+
+  const filteredItems = useMemo(() => {
+    if (focalMode === 'VIBE') return []; // Vibe mode focuses purely on the Story Hub experience
+    return products.filter(p => 
+      focalMode === 'STUDY' 
+        ? (p.category === 'Notebook' || p.category === 'Stationery')
+        : (p.category === 'Gadget' || p.category === 'Other')
+    );
+  }, [products, focalMode]);
+
+  return (
+    <div className="min-h-full bg-slate-50 flex flex-col pb-32">
+      {selectedStory && (
+        <StoryViewer 
+          story={selectedStory} 
+          onClose={() => setSelectedStory(null)} 
+          onLike={() => onLikeStory(selectedStory.id)} 
+        />
+      )}
+
+      {/* Nexus Aurora Header */}
+      <div className={`fixed top-0 inset-x-0 h-40 bg-gradient-to-b pointer-events-none z-0 transition-colors duration-1000 ${
+        focalMode === 'STUDY' ? 'from-emerald-500/10' : 
+        focalMode === 'LIFE' ? 'from-indigo-500/10' : 'from-rose-500/10'
+      }`} />
+      
+      <header className="sticky top-0 z-[110] px-6 py-8 flex flex-col space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+             <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl rotate-3">
+                <GraduationCap className="text-white" size={24} />
+             </div>
+             <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tighter">Nexus</h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">The Campus Hub</p>
+             </div>
+          </div>
+          <div className="flex items-center space-x-2">
+             <button onClick={onNavigateToNotifications} className="p-3 bg-white rounded-2xl shadow-sm relative group active:scale-95 transition-all">
+                <Bell size={20} className="text-slate-600 group-hover:text-indigo-600" />
+                <span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+             </button>
+             <button onClick={onNavigateToChat} className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl active:scale-95 transition-all">
+                <MessageCircle size={20} />
+             </button>
+          </div>
+        </div>
+
+        {/* The Unique Nexus Focal Switcher */}
+        <div className="flex bg-white/50 backdrop-blur-xl p-1.5 rounded-[32px] border border-white shadow-sm self-center">
+           <button 
+            onClick={() => setFocalMode('STUDY')}
+            className={`px-6 py-2.5 rounded-[24px] text-[9px] font-black uppercase tracking-widest transition-all ${focalMode === 'STUDY' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+           >
+             Study
+           </button>
+           <button 
+            onClick={() => setFocalMode('LIFE')}
+            className={`px-6 py-2.5 rounded-[24px] text-[9px] font-black uppercase tracking-widest transition-all ${focalMode === 'LIFE' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+           >
+             Life
+           </button>
+           <button 
+            onClick={() => setFocalMode('VIBE')}
+            className={`px-6 py-2.5 rounded-[24px] text-[9px] font-black uppercase tracking-widest transition-all ${focalMode === 'VIBE' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+           >
+             Vibe
+           </button>
         </div>
       </header>
 
-      {/* Default Feed View (Stories + Full List) */}
-      {!isSearchOpen && (
-        <>
-          <StoriesBar stories={stories} onSelectStory={() => {}} onAddStoryClick={onAddStoryClick} />
-          <div className="space-y-4 pt-4">
-            {products.map((product) => (
-              <PostCard 
-                key={product.id} 
-                product={product} 
-                currentUser={currentUser} 
-                onLike={onLike} 
-                onComment={setActiveCommentProductId} 
-                onShare={setActiveShareProductId} 
-                onDelete={onDeleteProduct}
-                onUserClick={handleUserClick}
-                activeMenuId={activeMenuId}
-                setActiveMenuId={setActiveMenuId}
-              />
+      {/* Stories Node Bar */}
+      <div className="px-6 mb-8">
+        <div className="flex items-center space-x-4 overflow-x-auto hide-scrollbar py-2">
+          <button 
+            onClick={onAddStoryClick}
+            className="w-16 h-16 rounded-[24px] bg-white border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0 active:scale-90 transition-all hover:border-indigo-400 hover:text-indigo-600"
+          >
+            <Plus size={24} strokeWidth={3} />
+          </button>
+          {stories.map(story => (
+            <div 
+              key={story.id} 
+              onClick={() => setSelectedStory(story)}
+              className="relative flex-shrink-0 group cursor-pointer active:scale-90 transition-all"
+            >
+               <div className={`w-16 h-16 rounded-[24px] p-0.5 bg-gradient-to-tr ${story.isLiked ? 'from-rose-400 to-rose-600' : 'from-indigo-500 to-purple-500'} animate-in zoom-in duration-300`}>
+                  <div className="w-full h-full rounded-[22px] bg-white p-0.5 overflow-hidden">
+                     <img src={story.userAvatar} className="w-full h-full object-cover rounded-[20px]" alt="" />
+                  </div>
+               </div>
+               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-lg border-2 border-slate-50 flex items-center justify-center shadow-md">
+                  <Zap size={10} className="text-indigo-600 fill-indigo-600" />
+               </div>
+               <p className="text-[8px] font-black text-slate-400 text-center mt-1.5 uppercase tracking-tighter truncate w-16">{story.userName}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Fluid Resource Flow (The Main Unique Feed) */}
+      <div className="px-6 space-y-12 pb-20 relative z-10">
+        {focalMode === 'VIBE' ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Campus Vibe</h2>
+               <div className="flex items-center text-rose-500 bg-rose-50 px-3 py-1.5 rounded-full animate-pulse">
+                  <Flame size={12} className="mr-1.5" /> <span className="text-[9px] font-black uppercase">Live Updates</span>
+               </div>
+            </div>
+            {stories.map((s, idx) => (
+              <div 
+                key={s.id} 
+                onClick={() => setSelectedStory(s)}
+                className="relative aspect-[4/5] rounded-[48px] overflow-hidden bg-slate-200 group shadow-2xl animate-in slide-in-from-bottom-10 duration-700"
+                style={{ animationDelay: `${idx * 150}ms` }}
+              >
+                <img src={s.image} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute bottom-8 left-8 flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-2xl border-2 border-white/30 p-0.5">
+                    <img src={s.userAvatar} className="w-full h-full rounded-2xl object-cover" alt="" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black text-lg">{s.userName}</h3>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Shared a moment</p>
+                  </div>
+                </div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20">
+                    <Play size={24} className="text-white ml-1" fill="white" />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        </>
-      )}
-
-      {/* Search Overlay View */}
-      {isSearchOpen && (
-        <div className="flex-1 animate-in fade-in duration-300 px-4 pt-6 space-y-8">
-          {/* Students Results */}
-          {searchQuery.trim() !== '' && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Found Students</h3>
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{filteredStudents.length} results</span>
-              </div>
-              <div className="space-y-3">
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map(student => (
-                    <div 
-                      key={student.id} 
-                      onClick={() => onNavigateToUserProfile(student)}
-                      className="bg-white p-4 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between animate-in slide-in-from-bottom duration-300 cursor-pointer hover:bg-slate-50 active:scale-[0.98] transition-all"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm flex-shrink-0">
-                           <img src={student.avatar} className="w-full h-full object-cover" alt="" />
-                        </div>
-                        <div className="min-w-0">
-                           <div className="flex items-center space-x-1">
-                              <h4 className="text-sm font-black text-slate-900 leading-tight truncate">{student.name}</h4>
-                              {student.isVerified && <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0"><Check size={8} className="text-white" strokeWidth={4} /></div>}
-                           </div>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">{student.college}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                        <button 
-                          onClick={() => toggleFollow(student.id)}
-                          className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-90 ${
-                            followingIds.has(student.id) 
-                              ? 'bg-slate-100 text-slate-600' 
-                              : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
-                          }`}
-                        >
-                          {followingIds.has(student.id) ? 'Following' : 'Follow'}
-                        </button>
-                        <button 
-                          onClick={onNavigateToChat} 
-                          className="p-2.5 bg-slate-50 text-slate-900 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors active:scale-90"
-                        >
-                          <MessageCircle size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center py-4 text-xs font-bold text-slate-300 italic">No students found with that name.</p>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Products Results */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{searchQuery.trim() === '' ? 'Discover Latest' : 'Product Results'}</h3>
-              {searchQuery.trim() !== '' && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{filteredProducts.length} items</span>}
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-2">
+               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Campus Resources</h2>
+               <button className="text-[10px] font-black text-indigo-600 flex items-center bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">
+                  <Filter size={12} className="mr-1.5" /> Filter
+               </button>
             </div>
-            <div className="space-y-4 pb-32">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <PostCard 
-                    key={product.id} 
-                    product={product} 
-                    currentUser={currentUser} 
-                    onLike={onLike} 
-                    onComment={setActiveCommentProductId} 
-                    onShare={setActiveShareProductId} 
-                    onDelete={onDeleteProduct}
-                    onUserClick={handleUserClick}
-                    activeMenuId={activeMenuId}
-                    setActiveMenuId={setActiveMenuId}
-                  />
-                ))
-              ) : (
-                <div className="py-20 text-center flex flex-col items-center opacity-30">
-                   <div className="p-6 bg-slate-50 rounded-[32px] mb-4">
-                      <Search size={40} />
-                   </div>
-                   <p className="text-sm font-black text-slate-900">No items found</p>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
+
+            {filteredItems.map((item, idx) => (
+              <ResourcePebble 
+                key={item.id} 
+                item={item} 
+                index={idx} 
+                onLike={() => onLike(item.id)}
+                onShare={() => onShare(item.id)}
+                onUserClick={() => onNavigateToUserProfile({ id: item.sellerId, name: item.sellerName, avatar: '', college: '' } as User)}
+              />
+            ))}
+
+            {filteredItems.length === 0 && (
+              <div className="py-20 flex flex-col items-center justify-center opacity-40 text-center space-y-4">
+                 <Layers size={48} className="text-slate-300" />
+                 <p className="text-sm font-black text-slate-900 uppercase tracking-widest leading-loose">No {focalMode.toLowerCase()} <br/>resources near you</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
 
-// Updated PostCard to include navigation triggers on user elements
-const PostCard = ({ product, currentUser, onLike, onComment, onShare, onDelete, onUserClick, activeMenuId, setActiveMenuId }: any) => {
+// Unique Pebble Card Component
+const ResourcePebble = ({ item, index, onLike, onShare, onUserClick }: any) => {
+  const isOdd = index % 2 !== 0;
+
   return (
-    <div className="bg-white border-y border-slate-100 shadow-sm relative overflow-visible animate-in fade-in duration-500">
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Clickable Header for Profile Navigation */}
-        <div 
-          className="flex items-center space-x-3 cursor-pointer group/user"
-          onClick={() => onUserClick(product.sellerId, product.sellerName)}
-        >
-          <div className="w-9 h-9 rounded-full p-[1.5px] bg-gradient-to-tr from-indigo-500 to-emerald-400 group-active/user:scale-95 transition-transform">
-            <div className="w-full h-full rounded-full bg-white p-[1px]">
-              <img src={`https://picsum.photos/seed/${product.sellerName}/100`} className="w-full h-full rounded-full object-cover" alt="" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center space-x-1">
-              <p className="text-[13px] font-black text-slate-900 leading-none group-hover/user:text-indigo-600 transition-colors">{product.sellerName}</p>
-              <div className="w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
-                <Check size={8} className="text-white" strokeWidth={4} />
+    <div className={`relative animate-in fade-in slide-in-from-bottom-10 duration-700`}>
+      <div 
+        className={`bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100 relative group overflow-hidden ${isOdd ? 'rounded-[48px] rounded-br-[80px]' : 'rounded-[48px] rounded-tl-[80px]'}`}
+      >
+        {/* Haptic Object Preview */}
+        <div className="relative mb-6">
+           <div 
+            className={`aspect-video w-full overflow-hidden shadow-2xl transition-transform duration-700 group-hover:scale-105 ${isOdd ? 'rounded-[32px]' : 'rounded-[32px] rotate-1'}`}
+           >
+              <img src={item.image} className="w-full h-full object-cover" alt="" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+           </div>
+           
+           <div className="absolute -bottom-4 right-4 bg-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-xl flex items-center space-x-2 active:scale-95 transition-transform">
+              <span className="text-sm font-black tracking-tighter italic">₹{item.price.toLocaleString('en-IN')}</span>
+              <div className="w-[1px] h-3 bg-white/20" />
+              <ArrowUpRight size={14} className="text-indigo-400" />
+           </div>
+        </div>
+
+        {/* Identity & Content */}
+        <div className="flex flex-col space-y-4">
+           <div className="flex items-center justify-between">
+              <div onClick={onUserClick} className="flex items-center space-x-2 cursor-pointer group/user">
+                 <img src={`https://picsum.photos/seed/${item.sellerName}/100`} className="w-8 h-8 rounded-full ring-2 ring-indigo-50 group-hover/user:ring-indigo-200 transition-all" alt="" />
+                 <span className="text-[11px] font-black text-slate-900 group-hover/user:text-indigo-600">{item.sellerName.split(' ')[0]}</span>
               </div>
-            </div>
-            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{product.category} • Campus Verified</p>
-          </div>
-        </div>
-        <div className="relative">
-          <button onClick={() => setActiveMenuId(activeMenuId === product.id ? null : product.id)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
-            <MoreHorizontal size={20} />
-          </button>
-          {activeMenuId === product.id && (
-            <ContextMenu 
-              isOwner={product.sellerId === currentUser.id} 
-              onDelete={() => { onDelete(product.id); setActiveMenuId(null); }} 
-              onClose={() => setActiveMenuId(null)} 
-            />
-          )}
-        </div>
-      </div>
+              <div className="flex items-center space-x-1 px-2 py-1 bg-slate-50 rounded-lg">
+                 <Sparkles size={10} className="text-amber-500" />
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.category}</span>
+              </div>
+           </div>
 
-      <div className="aspect-square bg-slate-50 relative overflow-hidden">
-        <img src={product.image} className="w-full h-full object-cover" alt={product.title} onDoubleClick={() => onLike(product.id)} />
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-xl border border-white/50">
-           <span className="text-sm font-black text-slate-900 tracking-tighter">₹{product.price.toLocaleString('en-IN')}</span>
-        </div>
-      </div>
+           <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none group-hover:text-indigo-600 transition-colors">
+             {item.title}
+           </h3>
+           <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">
+             {item.description}
+           </p>
 
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-5">
-            <button onClick={() => onLike(product.id)} className="transition-transform active:scale-150"><Heart size={28} className={`${product.isLiked ? "fill-rose-500 text-rose-500" : "text-slate-900"}`} strokeWidth={2} /></button>
-            <button onClick={() => onComment(product.id)} className="transition-transform active:scale-125"><MessageCircle size={28} className="text-slate-900" strokeWidth={2} /></button>
-            <button onClick={() => onShare(product.id)} className="transition-transform active:scale-125"><Share2 size={28} className="text-slate-900" strokeWidth={2} /></button>
-          </div>
-          <button className="p-2"><LinkIcon size={24} className="text-slate-900" strokeWidth={2} /></button>
+           <div className="pt-2 flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                 <button onClick={onLike} className="flex items-center space-x-2 group/btn">
+                    <Heart size={20} className={`transition-all ${item.isLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-slate-300 group-hover/btn:text-rose-400'}`} />
+                    <span className={`text-[10px] font-black ${item.isLiked ? 'text-rose-500' : 'text-slate-400'}`}>{item.likes}</span>
+                 </button>
+                 <button className="flex items-center space-x-2 group/btn">
+                    <MessageCircle size={20} className="text-slate-300 group-hover/btn:text-indigo-400 transition-colors" />
+                    <span className="text-[10px] font-black text-slate-400">{item.comments.length}</span>
+                 </button>
+              </div>
+              <button onClick={onShare} className="p-2 text-slate-300 hover:text-indigo-600 transition-colors">
+                 <Share2 size={18} />
+              </button>
+           </div>
         </div>
-        <div className="space-y-1.5">
-          <p className="text-sm font-black text-slate-900 tracking-tight">{product.likes.toLocaleString()} likes</p>
-          <p className="text-sm text-slate-800 leading-relaxed">
-            <span 
-              className="font-black mr-2 text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors"
-              onClick={() => onUserClick(product.sellerId, product.sellerName)}
-            >
-              {product.sellerName.split(' ')[0]}
-            </span>
-            <span className="font-medium text-slate-600">{product.description}</span>
-          </p>
-          {product.comments.length > 0 && <button onClick={() => onComment(product.id)} className="text-sm text-slate-400 font-bold block pt-1">View all {product.comments.length} comments</button>}
-          <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest pt-1">2 hours ago</p>
-        </div>
+
+        {/* Background Haptic Decorative Elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full pointer-events-none" />
       </div>
     </div>
   );

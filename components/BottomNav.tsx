@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, ShoppingBag, PlusSquare, MessageCircle, User as UserIcon, Search } from 'lucide-react';
+import { Home, ShoppingBag, Plus, MessageCircle, User as UserIcon, Search, Zap } from 'lucide-react';
 import { View } from '../types';
 
 interface BottomNavProps {
@@ -10,54 +10,46 @@ interface BottomNavProps {
 
 const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   const tabs = [
-    { id: 'FEED', icon: Home, label: 'Feed' },
-    { id: 'EXPLORE', icon: Search, label: 'Explore' },
-    { id: 'UPLOAD', icon: PlusSquare, label: 'Post', special: true },
-    { id: 'MARKET', icon: ShoppingBag, label: 'Shop' },
-    { id: 'PROFILE', icon: UserIcon, label: 'Me' },
+    { id: 'FEED', icon: Home, label: 'Hub' },
+    { id: 'EXPLORE', icon: Search, label: 'Discover' },
+    { id: 'MARKET', icon: ShoppingBag, label: 'Resources' },
+    { id: 'PROFILE', icon: UserIcon, label: 'Identity' },
   ];
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100]">
-      <nav className="glass bg-white/80 backdrop-blur-2xl squircle border border-white/50 flex justify-around items-center py-3 px-4 shadow-2xl shadow-indigo-900/10">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = currentView === tab.id || (tab.id === 'CHAT' && currentView === 'CHAT_DETAIL');
-          
-          if (tab.special) {
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setView(tab.id as View)}
-                className={`relative -top-8 w-16 h-16 rounded-[24px] bg-indigo-600 text-white flex items-center justify-center shadow-2xl shadow-indigo-600/40 transform transition-all active:scale-90 active:rotate-45 ${
-                  isActive ? 'ring-4 ring-indigo-100' : ''
-                }`}
-              >
-                <PlusSquare size={32} strokeWidth={2.5} />
-                <div className="absolute -top-1 -right-1 p-1 bg-rose-500 rounded-full text-[8px] font-black ring-2 ring-white animate-pulse">AI</div>
-              </button>
-            );
-          }
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-[100] pointer-events-none">
+      <div className="bg-slate-900/90 backdrop-blur-3xl rounded-[40px] p-2 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 pointer-events-auto">
+        {tabs.slice(0, 2).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setView(tab.id as View)}
+            className={`flex-1 flex flex-col items-center py-2 transition-all duration-500 ${currentView === tab.id ? 'text-indigo-400 scale-110' : 'text-slate-500'}`}
+          >
+            <tab.icon size={22} strokeWidth={currentView === tab.id ? 2.5 : 2} />
+            <span className="text-[8px] font-black uppercase tracking-widest mt-1">{tab.label}</span>
+          </button>
+        ))}
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setView(tab.id as View)}
-              className={`flex flex-col items-center space-y-1 transition-all duration-300 relative ${
-                isActive ? 'text-indigo-600 scale-110' : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <Icon size={22} strokeWidth={isActive ? 3 : 2} />
-              <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                {tab.label}
-              </span>
-              {isActive && (
-                <div className="absolute -top-2 w-1 h-1 bg-indigo-600 rounded-full animate-bounce"></div>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+        {/* The Pulse Node */}
+        <button
+          onClick={() => setView('UPLOAD')}
+          className="relative -top-4 w-16 h-16 rounded-[28px] bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-[0_10px_30px_rgba(79,70,229,0.4)] transform hover:rotate-90 transition-all active:scale-90"
+        >
+          <Plus size={32} strokeWidth={3} />
+          <div className="absolute inset-0 rounded-[28px] bg-white animate-ping opacity-20 pointer-events-none"></div>
+        </button>
+
+        {tabs.slice(2).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setView(tab.id as View)}
+            className={`flex-1 flex flex-col items-center py-2 transition-all duration-500 ${currentView === tab.id ? 'text-indigo-400 scale-110' : 'text-slate-500'}`}
+          >
+            <tab.icon size={22} strokeWidth={currentView === tab.id ? 2.5 : 2} />
+            <span className="text-[8px] font-black uppercase tracking-widest mt-1">{tab.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
