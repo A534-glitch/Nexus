@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { Search, Edit, Trash2, MoreHorizontal, GraduationCap, Pin, Zap, MessageSquare, Sparkles, Filter } from 'lucide-react';
+import { Search, Edit, Trash2, MoreHorizontal, GraduationCap, Pin, Zap, MessageSquare, Sparkles, Filter, Bot } from 'lucide-react';
 import { User } from '../types';
 
 interface ChatListViewProps {
   onSelectChat: (id: string) => void;
+  onSelectAiChat: () => void;
   onNavigateToUserProfile: (user: User) => void;
 }
 
-const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat, onNavigateToUserProfile }) => {
+const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat, onSelectAiChat, onNavigateToUserProfile }) => {
   const [chats, setChats] = useState([
     { id: 'user2', name: 'Priya Patel', last: 'Is the iPad still available?', time: '10:45 AM', unread: 2, isPinned: true, college: 'SRCC Delhi', heat: 0.9, type: 'DEAL' },
     { id: 'user3', name: 'Rahul Varma', last: 'Okay, lets meet at the library.', time: 'Yesterday', unread: 0, isPinned: false, college: 'BITS Pilani', heat: 0.6, type: 'FRIEND' },
@@ -49,19 +50,51 @@ const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat, onNavigateToU
 
       {/* Floating Frequency Canvas */}
       <div className="flex-1 overflow-y-auto hide-scrollbar px-6 relative z-10">
-        <div className="flex flex-wrap gap-4 pb-48">
-          {chats.map((chat, idx) => (
-            <FrequencyNode 
-              key={chat.id}
-              chat={chat}
-              index={idx}
-              onClick={() => onSelectChat(chat.id)}
-              onUserClick={(e) => {
-                e.stopPropagation();
-                onNavigateToUserProfile({ id: chat.id, name: chat.name, avatar: '', college: chat.college } as User);
-              }}
-            />
-          ))}
+        <div className="flex flex-col space-y-4 pb-48">
+          
+          {/* NEXUS AI ASSISTANT NODE */}
+          <div 
+            onClick={onSelectAiChat}
+            className="w-full animate-in zoom-in fade-in duration-700 cursor-pointer group"
+          >
+            <div className="relative p-6 rounded-[40px] border bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.3)] transition-all duration-500 hover:scale-[1.02]">
+              <div className="flex items-start justify-between mb-4">
+                 <div className="relative active:scale-90 transition-all">
+                    <div className="w-16 h-16 rounded-2xl p-0.5 bg-gradient-to-tr from-cyan-400 to-indigo-500 overflow-hidden shadow-2xl">
+                       <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
+                          <Bot size={32} className="text-indigo-400" />
+                       </div>
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#0f172a] animate-pulse" />
+                 </div>
+                 <div className="px-3 py-1 bg-white/10 rounded-full flex items-center space-x-2">
+                    <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">Nexus AI Concierge</span>
+                    <Sparkles size={10} className="text-indigo-400 fill-indigo-400" />
+                 </div>
+              </div>
+              <div className="space-y-1">
+                 <h3 className="text-xl font-black tracking-tight text-white group-hover:text-cyan-400 transition-colors">Nexus Assistant</h3>
+                 <p className="text-xs text-indigo-200 font-medium opacity-80">Online. Ask me anything about Nexus or Campus life!</p>
+              </div>
+              {/* Dynamic Aura */}
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-cyan-500/10 blur-[40px] rounded-full pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {chats.filter(c => filter === 'ALL' || c.type === filter).map((chat, idx) => (
+              <FrequencyNode 
+                key={chat.id}
+                chat={chat}
+                index={idx}
+                onClick={() => onSelectChat(chat.id)}
+                onUserClick={(e) => {
+                  e.stopPropagation();
+                  onNavigateToUserProfile({ id: chat.id, name: chat.name, avatar: '', college: chat.college } as User);
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -88,12 +121,13 @@ const ChatListView: React.FC<ChatListViewProps> = ({ onSelectChat, onNavigateToU
 // Unique Staggered Node Component
 const FrequencyNode = ({ chat, index, onClick, onUserClick }: any) => {
   // Sizing based on "heat" (priority/unread/frequency)
-  const sizeClass = chat.heat > 0.8 ? 'w-full' : chat.heat > 0.5 ? 'w-[calc(50%-8px)]' : 'w-full';
+  const sizeClass = chat.heat > 0.8 ? 'w-full' : 'w-[calc(50%-8px)]';
   
   return (
     <div 
       onClick={onClick}
-      className={`${sizeClass} animate-in zoom-in fade-in duration-700 delay-[${index * 100}ms] cursor-pointer group`}
+      className={`${sizeClass} animate-in zoom-in fade-in duration-700 cursor-pointer group`}
+      style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className={`relative p-6 rounded-[40px] border transition-all duration-500 hover:scale-[1.02] ${
         chat.unread > 0 
@@ -118,23 +152,12 @@ const FrequencyNode = ({ chat, index, onClick, onUserClick }: any) => {
 
         <div className="space-y-1">
            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black tracking-tight group-hover:text-indigo-400 transition-colors">{chat.name}</h3>
+              <h3 className="text-lg font-black tracking-tight group-hover:text-indigo-400 transition-colors truncate">{chat.name}</h3>
               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{chat.time}</span>
            </div>
            <p className="text-xs text-slate-400 font-medium line-clamp-1 opacity-80 group-hover:opacity-100 transition-opacity">
              {chat.last}
            </p>
-        </div>
-
-        {/* Decorative Waveform based on heat */}
-        <div className="absolute bottom-4 right-6 flex items-end space-x-0.5 opacity-20 group-hover:opacity-50 transition-opacity">
-           {[...Array(5)].map((_, i) => (
-             <div 
-              key={i} 
-              className="w-1 bg-white rounded-full transition-all duration-1000" 
-              style={{ height: `${Math.random() * (chat.heat * 30) + 5}px` }} 
-             />
-           ))}
         </div>
       </div>
     </div>

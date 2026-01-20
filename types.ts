@@ -59,6 +59,7 @@ export interface Message {
   image?: string;
   timestamp: number;
   offerAmount?: number;
+  isAi?: boolean;
   replyTo?: {
     text: string;
     senderName: string;
@@ -80,4 +81,4 @@ export interface Collection {
   coverImage: string;
 }
 
-export type View = 'LOGIN' | 'FEED' | 'EXPLORE' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE';
+export type View = 'LOGIN' | 'FEED' | 'EXPLORE' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE' | 'AI_CHAT';

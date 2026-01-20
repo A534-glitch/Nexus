@@ -1,14 +1,100 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
-const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+/**
+ * Generate Smart Comment
+ * Analyzes the product context to suggest a witty or helpful comment.
+ */
+export const generateSmartComment = async (title: string, description: string) => {
+  const prompt = `Act as a curious college student on a campus marketplace. 
+  The item is "${title}" described as "${description}". 
+  Generate ONE very short (max 10 words) comment or question about this item. 
+  Make it sound natural and student-like. Use an emoji.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    });
+    return response.text?.replace(/"/g, '') || "Is this still available? 😊";
+  } catch (e) {
+    return "Looks great! Is the price negotiable? 🙌";
+  }
+};
+
+/**
+ * Peer-to-Peer Negotiation Simulation
+ */
+export const streamPeerResponse = async (
+  peerName: string,
+  userMessage: string, 
+  history: {role: string, text: string}[], 
+  onChunk: (text: string) => void
+) => {
+  try {
+    const responseStream = await ai.models.generateContentStream({
+      model: 'gemini-3-flash-preview', 
+      contents: [
+        ...history.map(h => ({ 
+          role: h.role === 'user' ? 'user' : 'model', 
+          parts: [{ text: h.text }] 
+        })),
+        { role: 'user', parts: [{ text: userMessage }] }
+      ],
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        systemInstruction: `You are ${peerName}, a student on the Nexus campus marketplace. You are currently negotiating a deal. 
+        Behave like a real student: use casual language, occasional emojis, and be polite but firm about your price.`,
+      }
+    });
+
+    for await (const chunk of responseStream) {
+      if (chunk.text) onChunk(chunk.text);
+    }
+  } catch (error) {
+    onChunk("Hey, my campus WiFi just cut out. Can you repeat that? 📡");
+  }
+};
+
+/**
+ * Standard AI Assistant Streaming
+ */
+export const streamChatResponse = async (
+  userMessage: string, 
+  history: {role: string, text: string}[], 
+  onChunk: (text: string) => void
+) => {
+  try {
+    const responseStream = await ai.models.generateContentStream({
+      model: 'gemini-3-flash-preview', 
+      contents: [
+        ...history.map(h => ({ 
+          role: h.role === 'user' ? 'user' : 'model', 
+          parts: [{ text: h.text }] 
+        })),
+        { role: 'user', parts: [{ text: userMessage }] }
+      ],
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        systemInstruction: "You are the Nexus Assistant. Help students with notebooks and gadgets. Fast, friendly, concise.",
+      }
+    });
+
+    for await (const chunk of responseStream) {
+      if (chunk.text) onChunk(chunk.text);
+    }
+  } catch (error) {
+    onChunk("Signal lost. Reconnecting... 📡");
+  }
 };
 
 export const analyzeProductImage = async (base64Image: string) => {
-  const ai = getAIClient();
-  const prompt = "Analyze this image of a student product. Suggest a professional title, a detailed description, and a reasonable price in INR. Return JSON.";
-  
+  const prompt = "Generate title, description, and fair INR price for this student item. Return JSON.";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -31,68 +117,32 @@ export const analyzeProductImage = async (base64Image: string) => {
         }
       }
     });
-
     return JSON.parse(response.text || '{}');
-  } catch (error) {
-    console.error("Gemini Image Analysis Error:", error);
-    return null;
-  }
-};
-
-export const getBargainAdvice = async (productTitle: string, originalPrice: number, userOffer: number) => {
-  const ai = getAIClient();
-  const prompt = `Product: "${productTitle}", Price: ₹${originalPrice}. Student Offer: ₹${userOffer}. Provide 3 short bargaining points. If the offer is more than 30% lower than the price, warn the user politely.`;
-  
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    return response.text;
-  } catch (error) {
-    return "Try suggesting a price closer to the market value for a faster deal!";
-  }
+  } catch (e) { return null; }
 };
 
 export const generateSpeech = async (text: string) => {
-  const ai = getAIClient();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Narrate this campus resource description cheerfully: ${text}` }] }],
+      contents: [{ parts: [{ text }] }],
       config: {
         responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
       },
     });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (base64Audio) {
-      return base64Audio;
-    }
-  } catch (error) {
-    console.error("TTS Error:", error);
-  }
-  return null;
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  } catch (e) { return null; }
 };
 
-export const decodeAudio = async (base64Data: string): Promise<AudioBuffer> => {
-  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-  const binaryString = atob(base64Data);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
-  const dataInt16 = new Int16Array(bytes.buffer);
-  const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
-  const channelData = buffer.getChannelData(0);
-  for (let i = 0; i < dataInt16.length; i++) {
-    channelData[i] = dataInt16[i] / 32768.0;
-  }
-  return buffer;
+export const decodeAudio = async (base64: string): Promise<AudioBuffer> => {
+  const ctx = new AudioContext({ sampleRate: 24000 });
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const i16 = new Int16Array(bytes.buffer);
+  const buf = ctx.createBuffer(1, i16.length, 24000);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < i16.length; i++) data[i] = i16[i] / 32768.0;
+  return buf;
 };
