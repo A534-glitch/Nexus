@@ -15,6 +15,7 @@ interface FeedViewProps {
   onLikeStory: (storyId: string) => void;
   onComment: (productId: string, text: string) => void;
   onShare: (productId: string) => void;
+  onShareStory: (storyId: string) => void;
   onDeleteProduct: (productId: string) => void;
   onDeleteStory: (storyId: string) => void;
   onNavigateToChat: () => void;
@@ -23,7 +24,7 @@ interface FeedViewProps {
   onAddStoryClick: () => void;
 }
 
-const StoryViewer = ({ story, onClose, onLike }: { story: Story, onClose: () => void, onLike: () => void }) => {
+const StoryViewer = ({ story, onClose, onLike, onShare }: { story: Story, onClose: () => void, onLike: () => void, onShare: () => void }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -54,7 +55,10 @@ const StoryViewer = ({ story, onClose, onLike }: { story: Story, onClose: () => 
             <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Campus Story</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 text-white/80"><X size={28} /></button>
+        <div className="flex items-center space-x-2">
+          <button onClick={onShare} className="p-2 text-white/80 active:scale-90 transition-all"><Share2 size={24} /></button>
+          <button onClick={onClose} className="p-2 text-white/80 active:scale-90 transition-all"><X size={28} /></button>
+        </div>
       </div>
       <img src={story.image} className="w-full h-full object-cover" alt="" />
       <div className="absolute bottom-10 inset-x-6 flex items-center space-x-4 z-20">
@@ -122,10 +126,15 @@ const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) 
               <MessageCircle size={24} className={`transition-all ${showComments ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-400'}`} />
               <span className="text-xs font-black text-slate-900">{product.comments.length}</span>
             </button>
+            {/* Enabled Share Button with Counter */}
+            <button onClick={onShare} className="flex items-center space-x-2 group active:scale-90 transition-transform">
+              <Share2 size={24} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              <span className="text-xs font-black text-slate-900 transition-all group-hover:text-indigo-600">{product.shares || 0}</span>
+            </button>
           </div>
-          <button onClick={onShare} className="text-slate-400 hover:text-indigo-600 transition-colors">
-            <Share2 size={24} />
-          </button>
+          <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">
+            {product.category}
+          </div>
         </div>
 
         <div className="space-y-1">
@@ -182,7 +191,7 @@ const ProductCard = ({ product, onLike, onShare, onComment, onUserClick }: any) 
 };
 
 const FeedView: React.FC<FeedViewProps> = ({ 
-  products, stories, onLike, onLikeStory, onShare, onComment, 
+  products, stories, onLike, onLikeStory, onShare, onShareStory, onComment, 
   onNavigateToChat, onNavigateToNotifications, onNavigateToUserProfile, onAddStoryClick 
 }) => {
   const [activeStory, setActiveStory] = useState<Story | null>(null);
@@ -194,6 +203,7 @@ const FeedView: React.FC<FeedViewProps> = ({
           story={activeStory} 
           onClose={() => setActiveStory(null)} 
           onLike={() => onLikeStory(activeStory.id)} 
+          onShare={() => onShareStory(activeStory.id)}
         />
       )}
 

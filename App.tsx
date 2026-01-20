@@ -16,6 +16,7 @@ import ProductListView from './views/ProductListView';
 import NotificationView from './views/NotificationView';
 import UserProfileView from './views/UserProfileView';
 import BottomNav from './components/BottomNav';
+import { Share2, CheckCircle } from 'lucide-react';
 
 const MOCK_USER: User = {
   id: 'user1',
@@ -72,8 +73,15 @@ const INITIAL_PRODUCTS: Product[] = [
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('LOGIN');
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('nexus_products');
+    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+  });
+  const [stories, setStories] = useState<Story[]>(() => {
+    const saved = localStorage.getItem('nexus_stories');
+    return saved ? JSON.parse(saved) : INITIAL_STORIES;
+  });
+  
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [viewedUser, setViewedUser] = useState<User | null>(null);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
@@ -81,6 +89,16 @@ const App: React.FC = () => {
   const [initialOffer, setInitialOffer] = useState<number | undefined>(undefined);
   const [myPurchases, setMyPurchases] = useState<Product[]>([]);
   const [uploadMode, setUploadMode] = useState<'PRODUCT' | 'STORY'>('PRODUCT');
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('nexus_products', JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_stories', JSON.stringify(stories));
+  }, [stories]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('nexus_user');
@@ -90,8 +108,13 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleLogin = (name: string) => {
-    const newUser = { ...MOCK_USER, name };
+    const newUser = { ...MOCK_USER, id: `user_${Date.now()}`, name };
     setCurrentUser(newUser);
     localStorage.setItem('nexus_user', JSON.stringify(newUser));
     setCurrentView('FEED');
@@ -109,13 +132,15 @@ const App: React.FC = () => {
   };
 
   const handleAddProduct = (newProduct: Product) => {
-    setProducts([newProduct, ...products]);
+    setProducts(prev => [newProduct, ...prev]);
     setCurrentView('MARKET');
+    showToast("Product listed successfully! 🚀");
   };
 
   const handleAddStory = (newStory: Story) => {
-    setStories([newStory, ...stories]);
+    setStories(prev => [newStory, ...prev]);
     setCurrentView('FEED');
+    showToast("Story shared with peers! ✨");
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -163,27 +188,46 @@ const App: React.FC = () => {
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, comments: [newComment, ...p.comments] } : p));
   };
 
-  const handleShare = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+  const handleShare = async (id: string, type: 'PRODUCT' | 'STORY' = 'PRODUCT') => {
+    const item = type === 'PRODUCT' ? products.find(p => p.id === id) : stories.find(s => s.id === id);
+    if (!item) return;
 
     const shareData = {
-      title: `Nexus: ${product.title}`,
-      text: `Check out this ${product.title} on Nexus for ₹${product.price.toLocaleString('en-IN')}. Great campus deal! 🚀`,
+      title: `Nexus: ${type === 'PRODUCT' ? (item as Product).title : (item as Story).userName + "'s Story"}`,
+      text: type === 'PRODUCT' 
+        ? `Check out this ${(item as Product).title} on Nexus for ₹${(item as Product).price.toLocaleString('en-IN')}. Great campus deal! 🚀`
+        : `Check out ${(item as Story).userName}'s new story on Nexus! Campus life updates. ✨`,
       url: window.location.href,
     };
 
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        setProducts(prev => prev.map(p => p.id === productId ? { ...p, shares: p.shares + 1 } : p));
-      } catch (err) {
-        console.log("System Share canceled or failed:", err);
-      }
+        if (type === 'PRODUCT') {
+          setProducts(prev => prev.map(p => p.id === id ? { ...p, shares: (p.shares || 0) + 1 } : p));
+        }
+        showToast("Link shared successfully!");
+      } catch (err) { console.log(err); }
     } else {
       const waUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`;
       window.open(waUrl, '_blank');
-      setProducts(prev => prev.map(p => p.id === productId ? { ...p, shares: p.shares + 1 } : p));
+      showToast("Redirecting to WhatsApp...");
+    }
+  };
+
+  const handleShareApp = async () => {
+    const shareData = {
+      title: "Join Nexus",
+      text: "Join me on Nexus! The professional peer-to-peer ecosystem for students to share notebooks and gadgets. 🎓🚀",
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        showToast("Invitation sent!");
+      } catch (err) { console.log(err); }
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`, '_blank');
     }
   };
 
@@ -194,6 +238,7 @@ const App: React.FC = () => {
       setProducts(prev => prev.filter(p => p.id !== checkoutProduct.id));
     }
     setCurrentView('PROFILE');
+    showToast("Payment Successful! Contact seller for pickup.");
   };
 
   const renderView = () => {
@@ -206,7 +251,8 @@ const App: React.FC = () => {
         onLike={toggleLike} 
         onLikeStory={toggleLikeStory}
         onComment={handleComment} 
-        onShare={handleShare}
+        onShare={(id) => handleShare(id, 'PRODUCT')}
+        onShareStory={(id) => handleShare(id, 'STORY')}
         onDeleteProduct={handleDeleteProduct}
         onDeleteStory={handleDeleteStory}
         onNavigateToChat={() => setCurrentView('CHAT')}
@@ -219,7 +265,7 @@ const App: React.FC = () => {
         products={products} 
         onToggleWishlist={toggleWishlist}
         onTogglePin={togglePin}
-        onShare={handleShare}
+        onShare={(id) => handleShare(id, 'PRODUCT')}
         onBargain={(product, offer) => { setSelectedChatId('chat_with_' + product.sellerId); setInitialOffer(offer); setCurrentView('CHAT_DETAIL'); }} 
         onBuyNow={(product) => { setCheckoutProduct(product); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} 
         onRentNow={(product) => { setCheckoutProduct(product); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
@@ -228,19 +274,26 @@ const App: React.FC = () => {
       case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} initialOffer={initialOffer} onBack={() => { setCurrentView('CHAT'); setInitialOffer(undefined); }} currentUser={currentUser!} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} />;
       case 'AI_CHAT': return <AiChatView currentUser={currentUser!} onBack={() => setCurrentView('CHAT')} />;
       case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
-      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onShareApp={() => {}} />;
+      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onShareApp={handleShareApp} />;
       case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={handleUpdateUser} />;
       case 'PAYMENT': return <PaymentView product={checkoutProduct!} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={handlePurchaseComplete} />;
-      case 'WISHLIST': return <ProductListView title="My Wishlist" products={products.filter(p => p.isWishlisted)} onBack={() => setCurrentView('PROFILE')} onAction={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} onShare={handleShare} actionLabel="Buy" />;
-      case 'MY_LISTINGS': return <ProductListView title="My Listings" products={products.filter(p => p.sellerId === currentUser?.id)} onBack={() => setCurrentView('PROFILE')} onAction={() => {}} onDelete={handleDeleteProduct} onShare={handleShare} actionLabel="Edit" />;
+      case 'WISHLIST': return <ProductListView title="My Wishlist" products={products.filter(p => p.isWishlisted)} onBack={() => setCurrentView('PROFILE')} onAction={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} onShare={(id) => handleShare(id, 'PRODUCT')} actionLabel="Buy" />;
+      case 'MY_LISTINGS': return <ProductListView title="My Listings" products={products.filter(p => p.sellerId === currentUser?.id)} onBack={() => setCurrentView('PROFILE')} onAction={() => {}} onDelete={handleDeleteProduct} onShare={(id) => handleShare(id, 'PRODUCT')} actionLabel="Edit" />;
       case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
       case 'USER_PROFILE': return <UserProfileView user={viewedUser!} products={products} onBack={() => setCurrentView('FEED')} onNavigateToChat={() => setCurrentView('CHAT')} />;
-      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={handleShare} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }} />;
+      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={(id) => handleShare(id, 'PRODUCT')} onShareStory={(id) => handleShare(id, 'STORY')} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }} />;
     }
   };
 
   return (
     <div className="max-w-md mx-auto h-screen bg-white shadow-xl flex flex-col relative overflow-hidden">
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[500] bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-2 animate-in slide-in-from-top duration-300">
+           <CheckCircle size={18} className="text-emerald-400" />
+           <span className="text-xs font-black uppercase tracking-widest">{toast}</span>
+        </div>
+      )}
+      
       <main className="flex-1 overflow-y-auto hide-scrollbar pb-20">
         {renderView()}
       </main>
