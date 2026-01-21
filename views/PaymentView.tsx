@@ -5,7 +5,7 @@ import {
   ChevronLeft, ShieldCheck, CreditCard, Landmark, Wallet, 
   CheckCircle2, IndianRupee, Clock, ArrowRight, Smartphone, 
   Shield, Lock, Info, AlertCircle, Check, Delete, X, RefreshCw, Loader2, Zap, Layout, Search, Banknote,
-  FileText, Share2, ReceiptText
+  FileText, Share2, ReceiptText, Copy, ExternalLink, Download
 } from 'lucide-react';
 
 interface PaymentViewProps {
@@ -28,14 +28,14 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
   const [cvv, setCvv] = useState('');
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [processStep, setProcessStep] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes timer
+  const [timeLeft, setTimeLeft] = useState(300); 
+  const [copied, setCopied] = useState(false);
 
   const subtotal = type === 'BUY' ? product.price : (product.rentPrice || Math.floor(product.price * 0.1));
   const convFee = 19;
   const gst = Math.floor(subtotal * 0.18);
   const finalPrice = subtotal + convFee + gst;
 
-  // Generate a stable transaction ID for the session
   const transactionId = useMemo(() => `NX-${Math.floor(Math.random() * 100000000)}`, []);
 
   useEffect(() => {
@@ -51,33 +51,40 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(transactionId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleShareReceipt = async () => {
-    const receiptText = `Nexus Campus Transaction Receipt\n\n` +
-      `Transaction ID: ${transactionId}\n` +
-      `Merchant: NEXUS CAMPUS PAY\n` +
-      `Item: ${product.title}\n` +
-      `Seller: ${product.sellerName}\n` +
-      `Type: ${type === 'BUY' ? 'Purchase' : 'Rental'}\n` +
-      `Amount Paid: ₹${finalPrice.toLocaleString('en-IN')}\n\n` +
-      `Verified P2P Exchange via Nexus. 🎓🚀`;
+    const receiptText = `🎓 NEXUS CAMPUS RECEIPT\n\n` +
+      `✅ Payment Successful!\n` +
+      `--------------------------\n` +
+      `📦 Item: ${product.title}\n` +
+      `👤 Paid to: ${product.sellerName}\n` +
+      `💰 Amount: ₹${finalPrice.toLocaleString('en-IN')}\n` +
+      `🆔 Transaction ID: ${transactionId}\n` +
+      `📅 Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n` +
+      `--------------------------\n` +
+      `Verified via Nexus P2P Hub. 🚀\nShared from Nexus App.`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Nexus Receipt',
+          title: 'Nexus Receipt - Payment Successful',
           text: receiptText,
           url: window.location.href
         });
       } catch (err) {
-        console.log('Share cancelled or failed', err);
+        console.log('Sharing failed or cancelled', err);
       }
     } else {
-      // Fallback: Copy to Clipboard
       try {
         await navigator.clipboard.writeText(receiptText);
-        alert('Receipt details copied to clipboard!');
+        alert('Receipt text copied! You can now paste it in WhatsApp, Facebook, or Instagram.');
       } catch (err) {
-        console.error('Clipboard failed', err);
+        console.error('Clipboard copy failed', err);
       }
     }
   };
@@ -139,49 +146,85 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
 
   if (stage === 'SUCCESS') {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-slate-50 p-6 animate-in zoom-in duration-500 overflow-y-auto">
-        <div className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-2xl animate-bounce mb-6">
-          <CheckCircle2 size={40} strokeWidth={3} />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tighter mb-1 text-center">Payment Successful</h2>
-        <p className="text-slate-400 font-bold mb-8 text-center uppercase text-[9px] tracking-widest">TRANSACTION-ID: {transactionId}</p>
-        
-        <div className="w-full bg-white p-8 rounded-[40px] border border-slate-200 space-y-5 shadow-sm relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-              <ReceiptText size={100} />
-           </div>
-           <div className="flex justify-between items-center">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Merchant</span>
-             <span className="text-xs font-black text-slate-900">NEXUS CAMPUS PAY</span>
-           </div>
-           <div className="flex justify-between items-center">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Seller</span>
-             <span className="text-xs font-black text-slate-900">{product.sellerName}</span>
-           </div>
-           <div className="flex justify-between items-center">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Item</span>
-             <span className="text-xs font-black text-slate-600 truncate max-w-[150px]">{product.title}</span>
-           </div>
-           <div className="h-[1px] bg-slate-100 w-full" />
-           <div className="flex justify-between items-center">
-             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Amount Paid</span>
-             <div className="text-right">
-                <span className="text-2xl font-black text-slate-900 tracking-tighter">₹{finalPrice.toLocaleString('en-IN')}</span>
-                <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Instant Settlement</p>
+      <div className="h-full flex flex-col bg-white overflow-y-auto hide-scrollbar animate-in fade-in duration-500">
+        {/* GOOGLE PAY STYLE SUCCESS SCREEN */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
+          {/* Large Success Icon */}
+          <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-emerald-200 mb-8 animate-in zoom-in duration-700 bounce-in">
+             <Check size={56} strokeWidth={4} />
+          </div>
+
+          {/* Amount Display - Google Pay Style */}
+          <div className="text-center space-y-2 mb-10">
+             <h2 className="text-5xl font-[900] text-slate-900 tracking-tighter">
+               ₹{finalPrice.toLocaleString('en-IN')}
+             </h2>
+             <p className="text-sm font-bold text-slate-500">
+               Paid to <span className="text-slate-900 font-black">{product.sellerName}</span>
+             </p>
+             <div className="flex items-center justify-center space-x-2 text-emerald-600">
+                <ShieldCheck size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Payment Successful</span>
              </div>
-           </div>
+          </div>
+
+          {/* Receipt Card */}
+          <div className="w-full bg-slate-50 rounded-[40px] p-8 border border-slate-100 space-y-6 relative group overflow-hidden">
+             <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700">
+                <ReceiptText size={120} />
+             </div>
+
+             <div className="space-y-4 relative z-10">
+                <div className="flex justify-between items-center">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction ID</span>
+                   <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black text-slate-900">{transactionId}</span>
+                      <button onClick={handleCopyId} className="text-indigo-600">
+                        {copied ? <Check size={14} strokeWidth={3} /> : <Copy size={14} />}
+                      </button>
+                   </div>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</span>
+                   <span className="text-xs font-black text-slate-900">{new Date().toLocaleDateString()} • {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Node</span>
+                   <span className="text-xs font-black text-slate-900">Nexus Secure Gateway</span>
+                </div>
+                <div className="h-[1px] bg-slate-200 w-full" />
+                <div className="flex justify-between items-center">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset</span>
+                   <span className="text-xs font-black text-slate-600 truncate max-w-[150px]">{product.title}</span>
+                </div>
+             </div>
+          </div>
+
+          {/* Verification Badge */}
+          <div className="mt-8 flex flex-col items-center space-y-2 opacity-40">
+             <div className="flex items-center space-x-2">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo.png" className="h-4" alt="UPI" />
+                <div className="w-[1px] h-3 bg-slate-300" />
+                <p className="text-[9px] font-black uppercase tracking-widest">NPCI VERIFIED</p>
+             </div>
+          </div>
         </div>
 
-        <div className="mt-8 flex items-center space-x-3 w-full">
+        {/* BOTTOM ACTION BAR */}
+        <div className="p-8 bg-white border-t border-slate-100 flex flex-col space-y-4">
            <button 
             onClick={handleShareReceipt}
-            className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center space-x-2 active:scale-95 transition-all"
+            className="w-full py-5 bg-indigo-600 text-white rounded-[28px] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center space-x-3 active:scale-95 transition-all shadow-xl shadow-indigo-100"
            >
-              <Share2 size={16} />
+              <Share2 size={18} strokeWidth={2.5} />
               <span>Share Receipt</span>
            </button>
-           <button onClick={onComplete} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-200 active:scale-95 transition-all">
-              Done
+           
+           <button 
+            onClick={onComplete}
+            className="w-full py-5 bg-white border-2 border-slate-900 text-slate-900 rounded-[28px] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center active:scale-95 transition-all"
+           >
+              <span>Back to Marketplace</span>
            </button>
         </div>
       </div>
@@ -233,7 +276,6 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {stage === 'SUMMARY' && (
           <div className="p-6 space-y-8 animate-in slide-in-from-right duration-400">
-             {/* Order Identity Card */}
              <div className="bg-white p-6 rounded-[32px] flex items-center space-x-5 border border-slate-200 shadow-sm">
                 <div className="w-20 h-20 rounded-[20px] overflow-hidden bg-slate-50 shadow-inner">
                    <img src={product.image} className="w-full h-full object-cover" alt="" />
@@ -245,7 +287,6 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
                 </div>
              </div>
 
-             {/* Bill Breakdown */}
              <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bill Summary</h4>
@@ -445,7 +486,7 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
         )}
       </div>
 
-      {stage !== 'PIN_ENTRY' && (
+      {stage !== 'PIN_ENTRY' && stage !== 'SUCCESS' && (
         <footer className="p-8 bg-white border-t border-slate-100 rounded-t-[56px] shadow-[0_-20px_50px_rgba(0,0,0,0.05)] space-y-6">
            <div className="flex items-center justify-between px-4">
               <div className="flex items-center space-x-2 opacity-50">
