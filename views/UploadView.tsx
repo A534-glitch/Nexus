@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle, ShieldCheck, MapPin, Scale, Ban, Lock, X, Key } from 'lucide-react';
+import { Camera, Trash2, Sparkles, Send, Check, Eye, Clock, Users, ArrowUpCircle, Upload, AlertCircle, ShieldCheck, MapPin, Scale, Ban, Lock, X, Key, Info, Tag, Smartphone, HardDrive, Shield } from 'lucide-react';
 import { analyzeProductImage } from '../services/gemini';
-import { Product, User, Story } from '../types';
+import { Product, User, Story, ProductCondition } from '../types';
 
 interface UploadViewProps {
   onUpload: (product: Product) => void;
@@ -125,9 +125,22 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
   const [rentPrice, setRentPrice] = useState('');
   const [canRent, setCanRent] = useState(false);
   const [category, setCategory] = useState<'Notebook' | 'Gadget' | 'Stationery' | 'Other'>('Gadget');
+  const [condition, setCondition] = useState<ProductCondition>('Like New');
+  
+  // Gadget Specific Specs
+  const [brand, setBrand] = useState('');
+  const [connectivity, setConnectivity] = useState<'Wireless' | 'Wired' | 'Bluetooth' | 'USB-C' | 'Lightning' | undefined>(undefined);
+  const [compatibility, setCompatibility] = useState<string[]>([]);
+  const [storage, setStorage] = useState('');
+  const [hasWarranty, setHasWarranty] = useState(false);
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const platforms = ['iOS', 'Android', 'Mac', 'Windows', 'Linux'];
+  const connections: Array<'Wireless' | 'Wired' | 'Bluetooth' | 'USB-C' | 'Lightning'> = ['Wireless', 'Wired', 'Bluetooth', 'USB-C', 'Lightning'];
+  const storageOptions = ['64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
 
   useEffect(() => {
     setPostType(initialType);
@@ -153,8 +166,16 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
       setDescription(result.description || '');
       setPrice(result.suggestedPrice?.toString() || '');
       setRentPrice(Math.floor((result.suggestedPrice || 0) * 0.15).toString());
+      
+      if (result.category === 'Gadget') {
+          setCategory('Gadget');
+      }
     }
     setIsAnalyzing(false);
+  };
+
+  const togglePlatform = (p: string) => {
+    setCompatibility(prev => prev.includes(p) ? prev.filter(item => item !== p) : [...prev, p]);
   };
 
   const handleSubmit = () => {
@@ -185,11 +206,19 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         canRent,
         image,
         category,
+        condition,
         likes: 0,
         likedBy: [],
         shares: 0,
         comments: [],
-        isLiked: false
+        isLiked: false,
+        specs: category === 'Gadget' ? {
+          brand: brand || undefined,
+          connectivity: connectivity,
+          compatibility: compatibility.length > 0 ? compatibility : undefined,
+          storage: storage || undefined,
+          warranty: hasWarranty
+        } : undefined
       };
       onUpload(newProduct);
     }
@@ -227,7 +256,7 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
         </div>
       </header>
 
-      <div className="p-6 space-y-8 pb-48">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-48 hide-scrollbar">
         {/* Step 1: Media Capture */}
         <div className="space-y-4">
           <div className="flex items-center justify-between ml-1">
@@ -322,18 +351,109 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
                   </select>
                 </div>
                 <div className="group">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Sale Price</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-900 font-black">₹</span>
-                    <input
-                      required
-                      type="number"
-                      className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-8 pr-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold"
-                      placeholder="0"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                    />
-                  </div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Condition</label>
+                  <select
+                    className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold appearance-none"
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value as any)}
+                  >
+                    <option value="Brand New">Brand New</option>
+                    <option value="Like New">Like New</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Gadget Specific Advanced Fields */}
+              {category === 'Gadget' && (
+                <div className="space-y-6 p-5 bg-indigo-50/50 rounded-[32px] border border-indigo-100 animate-in slide-in-from-right duration-300">
+                    <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] flex items-center">
+                        <Smartphone size={12} className="mr-2" /> Technical Specification
+                    </h3>
+                    
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Brand</label>
+                                <input
+                                className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs outline-none transition-all font-bold"
+                                placeholder="Apple, Sony..."
+                                value={brand}
+                                onChange={(e) => setBrand(e.target.value)}
+                                />
+                            </div>
+                            <div className="group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Storage</label>
+                                <select
+                                className="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-xs outline-none transition-all font-bold appearance-none"
+                                value={storage}
+                                onChange={(e) => setStorage(e.target.value)}
+                                >
+                                    <option value="">None</option>
+                                    {storageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Link Type</label>
+                            <div className="flex flex-wrap gap-2">
+                                {connections.map(c => (
+                                    <button 
+                                        key={c}
+                                        onClick={() => setConnectivity(connectivity === c ? undefined : c)}
+                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${connectivity === c ? 'bg-indigo-600 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-500'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Platform Support</label>
+                            <div className="flex flex-wrap gap-2">
+                                {platforms.map(p => (
+                                    <button 
+                                        key={p}
+                                        onClick={() => togglePlatform(p)}
+                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${compatibility.includes(p) ? 'bg-indigo-600 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-500'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button 
+                          onClick={() => setHasWarranty(!hasWarranty)}
+                          className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between ${hasWarranty ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100'}`}
+                        >
+                           <div className="flex items-center space-x-3">
+                              <Shield size={18} className={hasWarranty ? 'text-emerald-500' : 'text-slate-300'} />
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${hasWarranty ? 'text-emerald-600' : 'text-slate-500'}`}>Under Warranty</span>
+                           </div>
+                           <div className={`w-10 h-5 rounded-full p-1 transition-all ${hasWarranty ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                              <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${hasWarranty ? 'translate-x-5' : 'translate-x-0'}`} />
+                           </div>
+                        </button>
+                    </div>
+                </div>
+              )}
+
+              <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-2">Sale Price</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-900 font-black">₹</span>
+                  <input
+                    required
+                    type="number"
+                    className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-8 pr-5 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold"
+                    placeholder="0"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -440,15 +560,6 @@ const UploadView: React.FC<UploadViewProps> = ({ onUpload, onAddStory, currentUs
               <span className="text-sm font-black uppercase tracking-[0.2em]">
                 {isFormValid ? 'Review & Post' : 'Finalize Details'}
               </span>
-            </button>
-            
-            <button 
-              onClick={() => setIsSafetyModalOpen(true)}
-              className="text-center group"
-            >
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] group-hover:text-indigo-600 transition-colors">
-                Safety First: View <span className="underline decoration-indigo-200 underline-offset-2 text-slate-500">Campus Trading Rules</span>
-              </p>
             </button>
           </div>
         </div>

@@ -1,11 +1,11 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { Product, User } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Generate Smart Comment
- * Analyzes the product context to suggest a witty or helpful comment.
  */
 export const generateSmartComment = async (title: string, description: string) => {
   const prompt = `Act as a curious college student on a campus marketplace. 
@@ -29,7 +29,6 @@ export const generateSmartComment = async (title: string, description: string) =
 
 /**
  * Generate Quick Replies
- * Provides 3 short one-tap reply options.
  */
 export const generateQuickReplies = async (title: string, description: string) => {
   const prompt = `Item: "${title}". Description: "${description}". 
@@ -85,6 +84,41 @@ export const streamPeerResponse = async (
     }
   } catch (error) {
     onChunk("Hey, my campus WiFi just cut out. Can you repeat that? 📡");
+  }
+};
+
+/**
+ * Proactive Campus Insight Generator
+ * Analyzes products and user context to offer proactive advice.
+ */
+export const streamProactiveInsight = async (
+  user: User,
+  products: Product[],
+  onChunk: (text: string) => void
+) => {
+  const inventorySummary = products.map(p => `${p.title} (${p.category}) - ₹${p.price}`).join(', ');
+  const prompt = `User: ${user.name} from ${user.college}. 
+  Current Marketplace Inventory: ${inventorySummary}.
+  Generate a proactive "Nexus Intelligence Report". 
+  1. Mention a specific product or category that is trending.
+  2. Give a "Campus Tip" (e.g. library being full, exam season prep, or weather-related gear).
+  3. Keep it under 40 words. Be high-energy and helpful. Start with "Nexus Insight:"`;
+
+  try {
+    const responseStream = await ai.models.generateContentStream({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        systemInstruction: "You are the Nexus Brain. You proactively assist students by spotting deals and providing campus updates.",
+      }
+    });
+
+    for await (const chunk of responseStream) {
+      if (chunk.text) onChunk(chunk.text);
+    }
+  } catch (e) {
+    onChunk("Nexus Insight: I've spotted some great new tech listings! Check the 'Resources' tab for the latest nodes. 🚀");
   }
 };
 

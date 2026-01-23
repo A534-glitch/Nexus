@@ -21,6 +21,8 @@ export interface User {
   };
 }
 
+export type ProductCondition = 'Brand New' | 'Like New' | 'Good' | 'Fair';
+
 export interface Product {
   id: string;
   sellerId: string;
@@ -40,6 +42,15 @@ export interface Product {
   isWishlisted?: boolean;
   isPinned?: boolean;
   purchaseType?: 'BOUGHT' | 'RENTED';
+  condition: ProductCondition;
+  // Advanced Gadget Specs
+  specs?: {
+    brand?: string;
+    connectivity?: 'Wireless' | 'Wired' | 'Bluetooth' | 'USB-C' | 'Lightning';
+    compatibility?: string[]; // e.g., ["iOS", "Android", "Mac", "Windows"]
+    storage?: string; // e.g., "128GB", "512GB"
+    warranty?: boolean;
+  };
 }
 
 export interface Story {
