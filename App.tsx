@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, View, Product, Comment, Story } from './types';
+import { api } from './services/api';
 import LoginView from './views/LoginView';
 import FeedView from './views/FeedView';
 import ExploreView from './views/ExploreView';
@@ -50,57 +51,6 @@ const DEFAULT_PRODUCTS: Product[] = [
       storage: '256GB',
       warranty: true
     }
-  },
-  {
-    id: 'p2',
-    sellerId: 'user3',
-    sellerName: 'Rahul V.',
-    title: 'Logitech MX Master 3S',
-    description: 'The best productivity mouse for coding and design.',
-    price: 8500,
-    rentPrice: 500,
-    canRent: true,
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    condition: 'Brand New',
-    likedBy: [],
-    likes: 12,
-    shares: 5,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false,
-    specs: {
-      brand: 'Logitech',
-      connectivity: 'Bluetooth',
-      compatibility: ['Mac', 'Windows', 'iOS', 'Android'],
-      warranty: false
-    }
-  },
-  {
-    id: 'p3',
-    sellerId: 'u104',
-    sellerName: 'Sana Varma',
-    title: 'Sony WH-1000XM4',
-    description: 'Noise cancelling headphones in great condition. Used for 1 year.',
-    price: 18000,
-    canRent: false,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop',
-    category: 'Gadget',
-    condition: 'Good',
-    likedBy: [],
-    likes: 3,
-    shares: 1,
-    comments: [],
-    isLiked: false,
-    isWishlisted: false,
-    isPinned: false,
-    specs: {
-      brand: 'Sony',
-      connectivity: 'Bluetooth',
-      compatibility: ['Mac', 'Windows', 'iOS', 'Android'],
-      warranty: true
-    }
   }
 ];
 
@@ -123,31 +73,26 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedProducts = localStorage.getItem('nexus_global_products');
-    const savedStories = localStorage.getItem('nexus_global_stories');
-    
-    setProducts(savedProducts ? JSON.parse(savedProducts) : DEFAULT_PRODUCTS);
-    setStories(savedStories ? JSON.parse(savedStories) : DEFAULT_STORIES);
+    const initData = async () => {
+      // API now handles failover internally to prevent console errors
+      const backendProducts = await api.getProducts();
+      setProducts(backendProducts.length > 0 ? backendProducts : DEFAULT_PRODUCTS);
+      
+      const savedStories = localStorage.getItem('nexus_global_stories');
+      setStories(savedStories ? JSON.parse(savedStories) : DEFAULT_STORIES);
 
-    const savedUser = localStorage.getItem('nexus_user');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      setCurrentUser(user);
-      if (user.theme) setTheme(user.theme);
-      setCurrentView('FEED');
-    }
+      const savedUser = localStorage.getItem('nexus_user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+        if (user.theme) setTheme(user.theme);
+        setCurrentView('FEED');
+      }
 
-    const timer = setTimeout(() => setIsBooting(false), 2000);
-    return () => clearTimeout(timer);
+      setIsBooting(false);
+    };
+    initData();
   }, []);
-
-  useEffect(() => {
-    if (products.length > 0) localStorage.setItem('nexus_global_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    if (stories.length > 0) localStorage.setItem('nexus_global_stories', JSON.stringify(stories));
-  }, [stories]);
 
   useEffect(() => {
     if (theme === 'dark') document.documentElement.classList.add('dark');
@@ -159,50 +104,32 @@ const App: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleLogin = (name: string) => {
-    const registry = JSON.parse(localStorage.getItem('nexus_registry') || '[]');
-    let user = registry.find((u: User) => u.name.toLowerCase() === name.toLowerCase());
-    
-    if (!user) {
-      user = {
-        id: `user_${Date.now()}`,
-        name,
-        avatar: `https://picsum.photos/seed/${name}/200`,
-        college: 'Nexus University',
-        isVerified: true,
-        aiEnabled: true,
-        theme: 'light',
-        followers: 0,
-        following: 0,
-        postsCount: 0
-      };
-      const newRegistry = [...registry, user];
-      localStorage.setItem('nexus_registry', JSON.stringify(newRegistry));
+  const handleLogin = async (name: string) => {
+    const user = await api.login(name);
+    if (user) {
+      setCurrentUser(user);
+      localStorage.setItem('nexus_user', JSON.stringify(user));
+      setCurrentView('FEED');
+      showToast(`Synchronized as ${user.name} ✨`);
     }
-    
-    setCurrentUser(user);
-    if (user.theme) setTheme(user.theme);
-    localStorage.setItem('nexus_user', JSON.stringify(user));
-    setCurrentView('FEED');
-    showToast(`Welcome back, ${name}! ✨`);
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('nexus_user');
-    setCurrentView('LOGIN');
-  };
-
-  const handleAddProduct = (newProduct: Product) => {
-    setProducts(prev => [newProduct, ...prev]);
+  const handleAddProduct = async (newProduct: Product) => {
+    const saved = await api.createProduct(newProduct);
+    if (saved) {
+      setProducts(prev => [saved, ...prev]);
+    } else {
+      setProducts(prev => [newProduct, ...prev]);
+    }
     setCurrentView('FEED');
-    showToast("Resource shared with all peers! 🚀");
+    showToast("Resource node shared! 🚀");
   };
 
   const handleAddStory = (newStory: Story) => {
     setStories(prev => [newStory, ...prev]);
+    localStorage.setItem('nexus_global_stories', JSON.stringify([newStory, ...stories]));
     setCurrentView('FEED');
-    showToast("Story updated to campus hub! 📸");
+    showToast("Story updated to hub! 📸");
   };
 
   const renderView = () => {
@@ -261,9 +188,9 @@ const App: React.FC = () => {
       case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} onBack={() => setCurrentView('CHAT')} currentUser={currentUser!} onNavigateToUserProfile={u => { setViewedUser(u); setCurrentView('USER_PROFILE'); }} initialOffer={initialOffer} />;
       case 'AI_CHAT': return <AiChatView currentUser={currentUser!} products={products} onBack={() => setCurrentView('CHAT')} />;
       case 'WALLET': return <WalletView onBack={() => setCurrentView('PROFILE')} myPurchases={myPurchases} onAddFunds={() => { setCheckoutProduct({ title: 'Campus Credits', price: 1000, image: '', category: 'Other', comments: [] } as any); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} />;
-      case 'PAYMENT': return checkoutProduct ? <PaymentView product={checkoutProduct} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={() => { if(checkoutProduct) setMyPurchases(p => [...p, checkoutProduct]); setCurrentView('FEED'); showToast("Payment processed via Nexus Pay! ✅"); }} /> : null;
+      case 'PAYMENT': return checkoutProduct ? <PaymentView product={checkoutProduct} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={() => { if(checkoutProduct) setMyPurchases(p => [...p, checkoutProduct]); setCurrentView('FEED'); showToast("Payment processed! ✅"); }} /> : null;
       case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
-      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onWallet={() => setCurrentView('WALLET')} onShareApp={() => {}} onUpdateUser={u => { setCurrentUser(u); localStorage.setItem('nexus_user', JSON.stringify(u)); }} />;
+      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={() => { setCurrentUser(null); localStorage.removeItem('nexus_user'); setCurrentView('LOGIN'); }} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onWallet={() => setCurrentView('WALLET')} onShareApp={() => {}} onUpdateUser={u => { setCurrentUser(u); localStorage.setItem('nexus_user', JSON.stringify(u)); }} />;
       case 'USER_PROFILE': return viewedUser ? <UserProfileView user={viewedUser} products={products} onBack={() => setCurrentView('EXPLORE')} onNavigateToChat={() => { setSelectedChatId(viewedUser.id); setCurrentView('CHAT_DETAIL'); }} /> : null;
       case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={u => { setCurrentUser(u); localStorage.setItem('nexus_user', JSON.stringify(u)); }} />;
       case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
@@ -284,12 +211,6 @@ const App: React.FC = () => {
               <div className="h-full bg-indigo-500 animate-[loading_2s_ease-in-out_infinite]" />
            </div>
         </div>
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes loading {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}} />
       </div>
     );
   }
