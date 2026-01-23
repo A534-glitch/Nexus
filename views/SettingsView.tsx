@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
 import { 
   ChevronLeft, Camera, User as UserIcon, Bell, Shield, 
@@ -20,6 +20,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   const [avatar, setAvatar] = useState(user.avatar);
   const [upiId, setUpiId] = useState(user.upiId || '');
   const [aiEnabled, setAiEnabled] = useState(user.aiEnabled ?? true);
+  const [theme, setTheme] = useState<'light' | 'dark'>(user.theme as any || 'light');
   
   // Granular Notifications
   const [notifs, setNotifs] = useState(user.notificationPrefs || {
@@ -30,9 +31,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
     campusAlerts: true
   });
 
-  const [darkMode, setDarkMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +55,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         avatar,
         upiId,
         aiEnabled,
+        theme,
         notificationPrefs: notifs
       });
       setSaving(false);
@@ -68,16 +68,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   };
 
   const NotifToggle = ({ label, icon: Icon, active, onToggle, color }: any) => (
-    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all active:scale-[0.98]">
       <div className="flex items-center space-x-3">
-        <div className={`p-2 rounded-xl bg-slate-50 ${active ? color : 'text-slate-300'}`}>
+        <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-800 ${active ? color : 'text-slate-300 dark:text-slate-600'}`}>
           <Icon size={18} />
         </div>
-        <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{label}</span>
       </div>
       <button 
         onClick={onToggle}
-        className={`w-12 h-6 rounded-full p-1 transition-all duration-300 ${active ? 'bg-indigo-600' : 'bg-slate-200'}`}
+        className={`w-12 h-6 rounded-full p-1 transition-all duration-300 ${active ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}`}
       >
         <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300 ${active ? 'translate-x-6' : 'translate-x-0'}`} />
       </button>
@@ -85,16 +85,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   );
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
-      <header className="px-6 py-6 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-40">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <header className="px-6 py-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center space-x-4">
-          <button onClick={onBack} className="p-3 bg-slate-100 rounded-2xl active:scale-90 transition-all">
+          <button onClick={onBack} className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-90 transition-all text-slate-900 dark:text-slate-100">
             <ChevronLeft size={20} />
           </button>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">Settings</h1>
+          <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Settings</h1>
         </div>
         <div className="flex items-center space-x-2">
-           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Live Sync</span>
+           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800">Live Sync</span>
         </div>
       </header>
 
@@ -102,19 +102,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         {/* Profile Identity Section */}
         <div className="flex flex-col items-center">
           <div className="relative group">
-            <div className="w-28 h-28 rounded-[38px] bg-white p-1.5 shadow-2xl ring-4 ring-indigo-50 overflow-hidden">
+            <div className="w-28 h-28 rounded-[38px] bg-white dark:bg-slate-800 p-1.5 shadow-2xl ring-4 ring-indigo-50 dark:ring-indigo-900/20 overflow-hidden">
               <img src={avatar} className="w-full h-full object-cover rounded-[34px]" alt="Profile" />
             </div>
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-3 rounded-xl shadow-xl border-4 border-white"
+              className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-3 rounded-xl shadow-xl border-4 border-white dark:border-slate-900"
             >
               <Camera size={16} />
             </button>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
           </div>
           <div className="mt-4 text-center">
-             <h2 className="text-base font-black text-slate-900 tracking-tight">{name}</h2>
+             <h2 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">{name}</h2>
              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Campus ID: {user.id.slice(-6)}</p>
           </div>
         </div>
@@ -139,18 +139,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Identity Details</h3>
           <div className="space-y-3">
             <div className="relative">
-              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
               <input
-                className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300 dark:text-slate-100"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Profile Name"
               />
             </div>
             <div className="relative">
-              <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+              <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
               <input
-                className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-4 pl-12 pr-5 text-sm outline-none transition-all font-bold placeholder:text-slate-300 dark:text-slate-100"
                 value={college}
                 onChange={(e) => setCollege(e.target.value)}
                 placeholder="University Institution"
@@ -162,7 +162,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         {/* AI Control Center */}
         <div className="space-y-4">
            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">AI Intelligence</h3>
-           <div className="bg-slate-900 rounded-[32px] p-6 shadow-xl relative overflow-hidden group">
+           <div className="bg-slate-900 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[32px] p-6 shadow-xl relative overflow-hidden group">
               <div className="absolute -top-6 -right-6 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
                  <Sparkles size={120} />
               </div>
@@ -189,20 +189,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         {/* Appearance & More */}
         <div className="space-y-4">
            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">System Preferences</h3>
-           <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm divide-y divide-slate-50">
+           <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm divide-y divide-slate-50 dark:divide-slate-800">
               <div className="flex items-center justify-between p-5">
                  <div className="flex items-center space-x-4">
-                    <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl"><Moon size={18} /></div>
-                    <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Dark Experience</span>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl"><Moon size={18} /></div>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Dark Experience</span>
                  </div>
-                 <button onClick={() => setDarkMode(!darkMode)} className={`w-12 h-6 rounded-full p-1 transition-all ${darkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                 <button 
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className={`w-12 h-6 rounded-full p-1 transition-all ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+                 >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
                  </button>
               </div>
               <div className="flex items-center justify-between p-5">
                  <div className="flex items-center space-x-4">
-                    <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl"><Globe size={18} /></div>
-                    <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Public Directory</span>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl"><Globe size={18} /></div>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Public Directory</span>
                  </div>
                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               </div>

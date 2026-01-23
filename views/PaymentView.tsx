@@ -147,14 +147,11 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
   if (stage === 'SUCCESS') {
     return (
       <div className="h-full flex flex-col bg-white overflow-y-auto hide-scrollbar animate-in fade-in duration-500">
-        {/* GOOGLE PAY STYLE SUCCESS SCREEN */}
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
-          {/* Large Success Icon */}
           <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-2xl shadow-emerald-200 mb-8 animate-in zoom-in duration-700 bounce-in">
              <Check size={56} strokeWidth={4} />
           </div>
 
-          {/* Amount Display - Google Pay Style */}
           <div className="text-center space-y-2 mb-10">
              <h2 className="text-5xl font-[900] text-slate-900 tracking-tighter">
                ₹{finalPrice.toLocaleString('en-IN')}
@@ -168,7 +165,6 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
              </div>
           </div>
 
-          {/* Receipt Card */}
           <div className="w-full bg-slate-50 rounded-[40px] p-8 border border-slate-100 space-y-6 relative group overflow-hidden">
              <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700">
                 <ReceiptText size={120} />
@@ -200,7 +196,6 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
              </div>
           </div>
 
-          {/* Verification Badge */}
           <div className="mt-8 flex flex-col items-center space-y-2 opacity-40">
              <div className="flex items-center space-x-2">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo.png" className="h-4" alt="UPI" />
@@ -210,7 +205,6 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
           </div>
         </div>
 
-        {/* BOTTOM ACTION BAR */}
         <div className="p-8 bg-white border-t border-slate-100 flex flex-col space-y-4">
            <button 
             onClick={handleShareReceipt}
@@ -486,7 +480,8 @@ const PaymentView: React.FC<PaymentViewProps> = ({ product, type, onBack, onComp
         )}
       </div>
 
-      {stage !== 'PIN_ENTRY' && stage !== 'SUCCESS' && (
+      /* FIXED: Removed redundant 'stage !== SUCCESS' type check which was causing a TypeScript narrowing comparison error */
+      {stage !== 'PIN_ENTRY' && (
         <footer className="p-8 bg-white border-t border-slate-100 rounded-t-[56px] shadow-[0_-20px_50px_rgba(0,0,0,0.05)] space-y-6">
            <div className="flex items-center justify-between px-4">
               <div className="flex items-center space-x-2 opacity-50">

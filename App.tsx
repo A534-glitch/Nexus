@@ -15,6 +15,7 @@ import SettingsView from './views/SettingsView';
 import ProductListView from './views/ProductListView';
 import NotificationView from './views/NotificationView';
 import UserProfileView from './views/UserProfileView';
+import WalletView from './views/WalletView';
 import BottomNav from './components/BottomNav';
 import { Share2, CheckCircle } from 'lucide-react';
 
@@ -67,6 +68,7 @@ const INITIAL_PRODUCTS: Product[] = [
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('LOGIN');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
   const [products, setProducts] = useState<Product[]>(() => {
     try {
@@ -102,10 +104,22 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedUser = localStorage.getItem('nexus_user');
     if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
+      const user = JSON.parse(savedUser);
+      setCurrentUser(user);
+      if (user.theme) {
+        setTheme(user.theme);
+      }
       setCurrentView('FEED');
     }
   }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -128,6 +142,7 @@ const App: React.FC = () => {
         followers: Math.floor(Math.random() * 500),
         following: Math.floor(Math.random() * 200),
         postsCount: 0,
+        theme: 'light',
         notificationPrefs: {
           messages: true, bargains: true, likes: true, comments: true, campusAlerts: true
         }
@@ -136,6 +151,7 @@ const App: React.FC = () => {
     }
     
     setCurrentUser(user);
+    if (user.theme) setTheme(user.theme);
     localStorage.setItem('nexus_user', JSON.stringify(user));
     setCurrentView('FEED');
     showToast(`Welcome to Campus, ${name}! 👋`);
@@ -149,6 +165,7 @@ const App: React.FC = () => {
 
   const handleUpdateUser = (updatedUser: User) => {
     setCurrentUser(updatedUser);
+    if (updatedUser.theme) setTheme(updatedUser.theme as any);
     localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
     const registry = JSON.parse(localStorage.getItem('nexus_registry') || '[]');
     localStorage.setItem('nexus_registry', JSON.stringify(registry.map((u: User) => u.id === updatedUser.id ? updatedUser : u)));
@@ -208,128 +225,176 @@ const App: React.FC = () => {
 
   const handleComment = (productId: string, text: string) => {
     if (!currentUser) return;
-    const newComment: Comment = { id: Math.random().toString(36).substr(2, 9), userId: currentUser.id, userName: currentUser.name, text, timestamp: Date.now() };
-    setProducts(prev => prev.map(p => p.id === productId ? { ...p, comments: [newComment, ...p.comments] } : p));
-  };
-
-  const handleShare = async (id: string, type: 'PRODUCT' | 'STORY' = 'PRODUCT') => {
-    const item = type === 'PRODUCT' ? products.find(p => p.id === id) : stories.find(s => s.id === id);
-    if (!item) return;
-
-    const shareData = {
-      title: `Nexus: ${type === 'PRODUCT' ? (item as Product).title : (item as Story).userName + "'s Story"}`,
-      text: type === 'PRODUCT' 
-        ? `Check out this ${(item as Product).title} on Nexus for ₹${(item as Product).price.toLocaleString('en-IN')}. Great campus deal! 🚀`
-        : `Check out ${(item as Story).userName}'s new story on Nexus! Campus life updates. ✨`,
-      url: window.location.href,
+    const newComment: Comment = { 
+      id: Math.random().toString(), 
+      userId: currentUser.id, 
+      userName: currentUser.name, 
+      text, 
+      timestamp: Date.now() 
     };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        if (type === 'PRODUCT') {
-          setProducts(prev => prev.map(p => p.id === id ? { ...p, shares: (p.shares || 0) + 1 } : p));
-        }
-        showToast("Link shared successfully!");
-      } catch (err) { console.log(err); }
-    } else {
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`;
-      window.open(waUrl, '_blank');
-      showToast("Redirecting to WhatsApp...");
-    }
-  };
-
-  const handleShareApp = async () => {
-    const shareData = {
-      title: "Join Nexus",
-      text: "Join me on Nexus! The professional peer-to-peer ecosystem for students to share notebooks and gadgets. 🎓🚀",
-      url: window.location.href,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        showToast("Invitation sent!");
-      } catch (err) { console.log(err); }
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`, '_blank');
-    }
-  };
-
-  const handlePurchaseComplete = () => {
-    if (checkoutProduct) {
-      const itemToCollect = { ...checkoutProduct, purchaseType: checkoutType === 'BUY' ? 'BOUGHT' as const : 'RENTED' as const };
-      setMyPurchases(prev => [itemToCollect, ...prev]);
-      setProducts(prev => prev.filter(p => p.id !== checkoutProduct.id));
-    }
-    setCurrentView('PROFILE');
-    showToast("Payment Successful! Contact seller for pickup.");
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, comments: [...p.comments, newComment] } : p));
   };
 
   const renderView = () => {
+    if (!currentUser && currentView !== 'LOGIN') {
+       return <LoginView onLogin={handleLogin} />;
+    }
+
     switch (currentView) {
       case 'LOGIN': return <LoginView onLogin={handleLogin} />;
-      case 'FEED': return <FeedView 
-        currentUser={currentUser!}
-        products={products} 
-        stories={stories} 
-        onLike={toggleLike} 
-        onLikeStory={toggleLikeStory}
-        onComment={handleComment} 
-        onShare={(id) => handleShare(id, 'PRODUCT')}
-        onShareStory={(id) => handleShare(id, 'STORY')}
-        onDeleteProduct={handleDeleteProduct}
-        onDeleteStory={handleDeleteStory}
-        onNavigateToChat={() => setCurrentView('CHAT')}
-        onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')}
-        onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
-        onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }}
-        onQuickBuy={(product) => { setCheckoutProduct(product); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
-        onQuickRent={(product) => { setCheckoutProduct(product); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
-      />;
-      case 'EXPLORE': return <ExploreView 
-        products={products} 
-        onSelectProduct={(p) => { setCheckoutProduct(p); setCurrentView('MARKET'); }}
-        onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
-        onNavigateToChat={(userId) => { setSelectedChatId(userId); setCurrentView('CHAT_DETAIL'); }}
-      />;
-      case 'MARKET': return <MarketView 
-        products={products} 
-        onToggleWishlist={toggleWishlist}
-        onTogglePin={togglePin}
-        onShare={(id) => handleShare(id, 'PRODUCT')}
-        onBargain={(product, offer) => { setSelectedChatId(product.sellerId); setInitialOffer(offer); setCurrentView('CHAT_DETAIL'); }} 
-        onBuyNow={(product) => { setCheckoutProduct(product); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} 
-        onRentNow={(product) => { setCheckoutProduct(product); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
-      />;
-      case 'CHAT': return <ChatListView onSelectChat={(id) => { setSelectedChatId(id); setCurrentView('CHAT_DETAIL'); }} onSelectAiChat={() => setCurrentView('AI_CHAT')} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} />;
-      case 'CHAT_DETAIL': return <ChatDetailView chatId={selectedChatId!} initialOffer={initialOffer} onBack={() => { setCurrentView('CHAT'); setInitialOffer(undefined); }} currentUser={currentUser!} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} />;
+      case 'FEED': return (
+        <FeedView 
+          currentUser={currentUser!}
+          products={products}
+          stories={stories}
+          onLike={toggleLike}
+          onLikeStory={toggleLikeStory}
+          onComment={handleComment}
+          onShare={() => showToast("Resource link copied! 🔗")}
+          onShareStory={() => showToast("Story link shared! ✨")}
+          onDeleteProduct={handleDeleteProduct}
+          onDeleteStory={handleDeleteStory}
+          onNavigateToChat={() => setCurrentView('CHAT')}
+          onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')}
+          onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
+          onNavigateToWallet={() => setCurrentView('WALLET')}
+          onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }}
+          onQuickBuy={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
+          onQuickRent={(p) => { setCheckoutProduct(p); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
+        />
+      );
+      case 'EXPLORE': return (
+        <ExploreView 
+          products={products}
+          onSelectProduct={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
+          onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
+          onNavigateToChat={(userId) => { setSelectedChatId(userId); setCurrentView('CHAT_DETAIL'); }}
+        />
+      );
+      case 'MARKET': return (
+        <MarketView 
+          products={products}
+          onBargain={(p) => { setSelectedChatId(p.sellerId); setCurrentView('CHAT_DETAIL'); }}
+          onBuyNow={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
+          onRentNow={(p) => { setCheckoutProduct(p); setCheckoutType('RENT'); setCurrentView('PAYMENT'); }}
+          onToggleWishlist={toggleWishlist}
+          onTogglePin={togglePin}
+          onComment={handleComment}
+          onShare={() => showToast("Resource link shared! 🚀")}
+        />
+      );
+      case 'CHAT': return (
+        <ChatListView 
+          onSelectChat={(id) => { setSelectedChatId(id); setCurrentView('CHAT_DETAIL'); }}
+          onSelectAiChat={() => setCurrentView('AI_CHAT')}
+          onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
+        />
+      );
+      case 'CHAT_DETAIL': return (
+        <ChatDetailView 
+          chatId={selectedChatId!}
+          onBack={() => setCurrentView('CHAT')}
+          currentUser={currentUser!}
+          onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }}
+          initialOffer={initialOffer}
+        />
+      );
       case 'AI_CHAT': return <AiChatView currentUser={currentUser!} onBack={() => setCurrentView('CHAT')} />;
-      case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
-      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={handleLogout} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onShareApp={handleShareApp} onUpdateUser={handleUpdateUser} />;
+      case 'UPLOAD': return (
+        <UploadView 
+          onUpload={handleAddProduct}
+          onAddStory={handleAddStory}
+          currentUser={currentUser!}
+          initialType={uploadMode}
+        />
+      );
+      case 'PROFILE': return (
+        <ProfileView 
+          user={currentUser!}
+          myPurchases={myPurchases}
+          onLogout={handleLogout}
+          onSettings={() => setCurrentView('SETTINGS')}
+          onWishlist={() => setCurrentView('WISHLIST')}
+          onManageListings={() => setCurrentView('MY_LISTINGS')}
+          onWallet={() => setCurrentView('WALLET')}
+          onShareApp={() => showToast("App link shared with peers! 🤝")}
+          onUpdateUser={handleUpdateUser}
+        />
+      );
+      case 'WALLET': return (
+        <WalletView 
+          onBack={() => setCurrentView('PROFILE')}
+          myPurchases={myPurchases}
+          onAddFunds={() => {
+            // Simulate adding funds via gateway
+            setCheckoutProduct({ title: 'Campus Wallet Credits', price: 1000, image: '', category: 'Other' } as any);
+            setCheckoutType('BUY');
+            setCurrentView('PAYMENT');
+          }}
+        />
+      );
+      case 'PAYMENT': return (
+        <PaymentView 
+          product={checkoutProduct!}
+          type={checkoutType}
+          onBack={() => setCurrentView('MARKET')}
+          onComplete={() => {
+             setMyPurchases(prev => [...prev, { ...checkoutProduct!, purchaseType: checkoutType === 'BUY' ? 'BOUGHT' : 'RENTED' } as Product]);
+             setCurrentView('FEED');
+             showToast("Transaction successful! Check Identity. ✅");
+          }}
+        />
+      );
       case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={handleUpdateUser} />;
-      case 'PAYMENT': return <PaymentView product={checkoutProduct!} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={handlePurchaseComplete} />;
-      case 'WISHLIST': return <ProductListView title="My Wishlist" products={products.filter(p => p.isWishlisted)} onBack={() => setCurrentView('PROFILE')} onAction={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} onShare={(id) => handleShare(id, 'PRODUCT')} actionLabel="Buy" />;
-      case 'MY_LISTINGS': return <ProductListView title="My Listings" products={products.filter(p => p.sellerId === currentUser?.id)} onBack={() => setCurrentView('PROFILE')} onAction={() => {}} onDelete={handleDeleteProduct} onShare={(id) => handleShare(id, 'PRODUCT')} actionLabel="Edit" />;
+      case 'WISHLIST': return (
+        <ProductListView 
+          title="My Wishlist"
+          products={products.filter(p => p.isWishlisted)}
+          onBack={() => setCurrentView('PROFILE')}
+          onAction={(p) => { setCheckoutProduct(p); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }}
+          onShare={() => showToast("Wishlist item shared! 💖")}
+          actionLabel="Buy Now"
+        />
+      );
+      case 'MY_LISTINGS': return (
+        <ProductListView 
+          title="My Listings"
+          products={products.filter(p => p.sellerId === currentUser?.id)}
+          onBack={() => setCurrentView('PROFILE')}
+          onAction={() => {}}
+          onShare={() => showToast("Listing shared! 📣")}
+          onDelete={handleDeleteProduct}
+          actionLabel="Manage"
+        />
+      );
       case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
-      case 'USER_PROFILE': return <UserProfileView user={viewedUser!} products={products} onBack={() => setCurrentView('FEED')} onNavigateToChat={() => setCurrentView('CHAT')} />;
-      default: return <FeedView currentUser={currentUser!} products={products} stories={stories} onLike={toggleLike} onLikeStory={toggleLikeStory} onComment={handleComment} onShare={(id) => handleShare(id, 'PRODUCT')} onShareStory={(id) => handleShare(id, 'STORY')} onDeleteProduct={handleDeleteProduct} onDeleteStory={handleDeleteStory} onNavigateToChat={() => setCurrentView('CHAT')} onNavigateToNotifications={() => setCurrentView('NOTIFICATIONS')} onNavigateToUserProfile={(user) => { setViewedUser(user); setCurrentView('USER_PROFILE'); }} onAddStoryClick={() => { setUploadMode('STORY'); setCurrentView('UPLOAD'); }} />;
+      case 'USER_PROFILE': return (
+        <UserProfileView 
+          user={viewedUser!}
+          products={products}
+          onBack={() => setCurrentView('FEED')}
+          onNavigateToChat={() => { setSelectedChatId(viewedUser!.id); setCurrentView('CHAT_DETAIL'); }}
+        />
+      );
+      default: return <LoginView onLogin={handleLogin} />;
     }
   };
 
   return (
-    <div className="max-w-md mx-auto h-screen bg-white shadow-xl flex flex-col relative overflow-hidden">
-      {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[500] bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-2 animate-in slide-in-from-top duration-300">
-           <CheckCircle size={18} className="text-emerald-400" />
-           <span className="text-xs font-black uppercase tracking-widest">{toast}</span>
-        </div>
+    <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
+      {renderView()}
+      
+      {currentView !== 'LOGIN' && currentView !== 'PAYMENT' && currentView !== 'CHAT_DETAIL' && currentView !== 'AI_CHAT' && (
+        <BottomNav currentView={currentView} setView={setCurrentView} />
       )}
       
-      <main className="flex-1 overflow-y-auto hide-scrollbar pb-20">
-        {renderView()}
-      </main>
-      {currentUser && currentView !== 'LOGIN' && currentView !== 'PAYMENT' && currentView !== 'SETTINGS' && (
-        <BottomNav currentView={currentView} setView={(v) => { if(v === 'UPLOAD') setUploadMode('PRODUCT'); setCurrentView(v); }} />
+      {toast && (
+        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-top-10 duration-500">
+          <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center space-x-3">
+            <CheckCircle size={18} className="text-emerald-400" />
+            <span className="text-sm font-bold">{toast}</span>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -28,6 +28,33 @@ export const generateSmartComment = async (title: string, description: string) =
 };
 
 /**
+ * Generate Quick Replies
+ * Provides 3 short one-tap reply options.
+ */
+export const generateQuickReplies = async (title: string, description: string) => {
+  const prompt = `Item: "${title}". Description: "${description}". 
+  Generate exactly 3 very short student-style quick reply options (max 3 words each).
+  Format as a JSON array of strings. Example: ["Is it available?", "Final price?", "Check DM"]`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      }
+    });
+    return JSON.parse(response.text || '["Available?", "Negotiable?", "Condition?"]');
+  } catch (e) {
+    return ["Available?", "Negotiable?", "Condition?"];
+  }
+};
+
+/**
  * Peer-to-Peer Negotiation Simulation
  */
 export const streamPeerResponse = async (

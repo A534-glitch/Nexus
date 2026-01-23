@@ -7,6 +7,7 @@ export interface User {
   isVerified?: boolean;
   upiId?: string;
   aiEnabled?: boolean;
+  theme?: 'light' | 'dark';
   bio?: string;
   followers?: number;
   following?: number;
@@ -90,4 +91,4 @@ export interface Collection {
   coverImage: string;
 }
 
-export type View = 'LOGIN' | 'FEED' | 'EXPLORE' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE' | 'AI_CHAT';
+export type View = 'LOGIN' | 'FEED' | 'EXPLORE' | 'MARKET' | 'CHAT' | 'UPLOAD' | 'PROFILE' | 'CHAT_DETAIL' | 'PAYMENT' | 'SETTINGS' | 'WISHLIST' | 'MY_LISTINGS' | 'NOTIFICATIONS' | 'USER_PROFILE' | 'AI_CHAT' | 'WALLET';

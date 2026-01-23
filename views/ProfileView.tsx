@@ -15,6 +15,7 @@ interface ProfileViewProps {
   onSettings: () => void;
   onWishlist: () => void;
   onManageListings: () => void;
+  onWallet: () => void;
   onShareApp: () => void;
   onUpdateUser: (user: User) => void;
 }
@@ -137,7 +138,7 @@ const LegalModal = ({ title, type, onClose }: { title: string, type: 'SAFETY' | 
   );
 };
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, onSettings, onWishlist, onManageListings, onShareApp, onUpdateUser }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, onSettings, onWishlist, onManageListings, onWallet, onShareApp, onUpdateUser }) => {
   const [modalContent, setModalContent] = useState<{ title: string, type: 'SAFETY' | 'PRIVACY' } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,7 +153,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, myPurchases, onLogout, 
     { label: 'My Listings', icon: ShoppingBag, onClick: onManageListings, color: 'text-indigo-600' },
     { label: 'My Wishlist', icon: Bookmark, onClick: onWishlist, color: 'text-rose-500' },
     { label: 'Change Institution', icon: GraduationCap, onClick: onSettings, color: 'text-amber-600' },
-    { label: 'Payments', icon: CheckCircle, onClick: () => {}, color: 'text-emerald-500' },
+    { label: 'Payments', icon: CheckCircle, onClick: onWallet, color: 'text-emerald-500' },
     { label: 'Invite Peers', icon: Share2, onClick: onShareApp, color: 'text-sky-500' },
   ];
 
