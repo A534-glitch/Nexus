@@ -1,11 +1,12 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { User } from '../types';
 import { 
   ChevronLeft, Camera, User as UserIcon, Bell, Shield, 
   Lock, Moon, HelpCircle, Save, Wallet, Sparkles, 
   ShieldCheck, Globe, GraduationCap, MessageSquare, 
-  Tag, Heart, Info, Megaphone, CheckCircle, Database, Download, Upload, AlertTriangle
+  Tag, Heart, Info, Megaphone, CheckCircle, Database, Download, Upload, AlertTriangle,
+  Sun
 } from 'lucide-react';
 import { downloadDatabaseFile, importDatabaseFile, getDbSize } from '../services/database';
 
@@ -13,9 +14,10 @@ interface SettingsViewProps {
   user: User;
   onBack: () => void;
   onUpdateUser: (user: User) => void;
+  onInstantThemeToggle: (theme: 'light' | 'dark') => void;
 }
 
-const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser, onInstantThemeToggle }) => {
   const [name, setName] = useState(user.name);
   const [college, setCollege] = useState(user.college || '');
   const [avatar, setAvatar] = useState(user.avatar);
@@ -52,6 +54,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
     if (file && window.confirm("This will overwrite your current local database and restart the app. Continue?")) {
       await importDatabaseFile(file);
     }
+  };
+
+  const handleThemeToggle = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    onInstantThemeToggle(newTheme);
   };
 
   const handleSave = () => {
@@ -250,14 +258,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm divide-y divide-slate-50 dark:divide-slate-800">
               <div className="flex items-center justify-between p-5">
                  <div className="flex items-center space-x-4">
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl"><Moon size={18} /></div>
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Dark Experience</span>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl">
+                      {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                    </div>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                      {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </span>
                  </div>
                  <button 
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className={`w-12 h-6 rounded-full p-1 transition-all ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+                  onClick={handleThemeToggle}
+                  className={`w-12 h-6 rounded-full p-1 transition-all duration-300 ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}`}
                  >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
                  </button>
               </div>
               <div className="flex items-center justify-between p-5">

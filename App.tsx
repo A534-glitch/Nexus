@@ -98,8 +98,11 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
 
   const showToast = (msg: string) => {
@@ -111,6 +114,7 @@ const App: React.FC = () => {
     const user = await api.login(name);
     if (user) {
       setCurrentUser(user);
+      if (user.theme) setTheme(user.theme);
       localStorage.setItem('nexus_user', JSON.stringify(user));
       setCurrentView('FEED');
       showToast(`Synchronized via SQLite ✨`);
@@ -133,6 +137,12 @@ const App: React.FC = () => {
     localStorage.setItem('nexus_global_stories', JSON.stringify([newStory, ...stories]));
     setCurrentView('FEED');
     showToast("Story updated to hub! 📸");
+  };
+
+  const updateUserInfo = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    if (updatedUser.theme) setTheme(updatedUser.theme);
+    localStorage.setItem('nexus_user', JSON.stringify(updatedUser));
   };
 
   const renderView = () => {
@@ -193,9 +203,9 @@ const App: React.FC = () => {
       case 'WALLET': return <WalletView onBack={() => setCurrentView('PROFILE')} myPurchases={myPurchases} onAddFunds={() => { setCheckoutProduct({ title: 'Campus Credits', price: 1000, image: '', category: 'Other', comments: [] } as any); setCheckoutType('BUY'); setCurrentView('PAYMENT'); }} />;
       case 'PAYMENT': return checkoutProduct ? <PaymentView product={checkoutProduct} type={checkoutType} onBack={() => setCurrentView('MARKET')} onComplete={() => { if(checkoutProduct) setMyPurchases(p => [...p, checkoutProduct]); setCurrentView('FEED'); showToast("Payment processed! ✅"); }} /> : null;
       case 'UPLOAD': return <UploadView onUpload={handleAddProduct} onAddStory={handleAddStory} currentUser={currentUser!} initialType={uploadMode} />;
-      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={() => { setCurrentUser(null); localStorage.removeItem('nexus_user'); setCurrentView('LOGIN'); }} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onWallet={() => setCurrentView('WALLET')} onShareApp={() => {}} onUpdateUser={u => { setCurrentUser(u); localStorage.setItem('nexus_user', JSON.stringify(u)); }} />;
+      case 'PROFILE': return <ProfileView user={currentUser!} myPurchases={myPurchases} onLogout={() => { setCurrentUser(null); localStorage.removeItem('nexus_user'); setCurrentView('LOGIN'); }} onSettings={() => setCurrentView('SETTINGS')} onWishlist={() => setCurrentView('WISHLIST')} onManageListings={() => setCurrentView('MY_LISTINGS')} onWallet={() => setCurrentView('WALLET')} onShareApp={() => {}} onUpdateUser={updateUserInfo} />;
       case 'USER_PROFILE': return viewedUser ? <UserProfileView user={viewedUser} products={products} onBack={() => setCurrentView('EXPLORE')} onNavigateToChat={() => { setSelectedChatId(viewedUser.id); setCurrentView('CHAT_DETAIL'); }} /> : null;
-      case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={u => { setCurrentUser(u); localStorage.setItem('nexus_user', JSON.stringify(u)); }} />;
+      case 'SETTINGS': return <SettingsView user={currentUser!} onBack={() => setCurrentView('PROFILE')} onUpdateUser={updateUserInfo} onInstantThemeToggle={setTheme} />;
       case 'NOTIFICATIONS': return <NotificationView onBack={() => setCurrentView('FEED')} />;
       default: return <LoginView onLogin={handleLogin} />;
     }
