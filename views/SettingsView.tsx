@@ -5,8 +5,9 @@ import {
   ChevronLeft, Camera, User as UserIcon, Bell, Shield, 
   Lock, Moon, HelpCircle, Save, Wallet, Sparkles, 
   ShieldCheck, Globe, GraduationCap, MessageSquare, 
-  Tag, Heart, Info, Megaphone, CheckCircle
+  Tag, Heart, Info, Megaphone, CheckCircle, Database, Download, Upload, AlertTriangle
 } from 'lucide-react';
+import { downloadDatabaseFile, importDatabaseFile, getDbSize } from '../services/database';
 
 interface SettingsViewProps {
   user: User;
@@ -22,7 +23,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   const [aiEnabled, setAiEnabled] = useState(user.aiEnabled ?? true);
   const [theme, setTheme] = useState<'light' | 'dark'>(user.theme as any || 'light');
   
-  // Granular Notifications
   const [notifs, setNotifs] = useState(user.notificationPrefs || {
     messages: true,
     bargains: true,
@@ -32,7 +32,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
   });
 
   const [saving, setSaving] = useState(false);
+  const [dbSize, setDbSize] = useState(getDbSize());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dbInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,6 +44,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
         setAvatar(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDbImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && window.confirm("This will overwrite your current local database and restart the app. Continue?")) {
+      await importDatabaseFile(file);
     }
   };
 
@@ -119,11 +128,60 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, onBack, onUpdateUser 
           </div>
         </div>
 
+        {/* Data & Development Hub */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Data & Development</h3>
+            <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">SQLite Node Management</span>
+          </div>
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-6 shadow-sm space-y-6">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                   <div className="p-2 bg-indigo-50 dark:bg-indigo-950 rounded-xl text-indigo-600">
+                      <Database size={20} />
+                   </div>
+                   <div>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-slate-100">Local SQLite File</h4>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">Node Size: {dbSize} KB</p>
+                   </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                   <span className="text-[8px] font-black text-emerald-500 uppercase">Active</span>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={downloadDatabaseFile}
+                  className="flex flex-col items-center justify-center p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 hover:bg-slate-100 transition-all group"
+                >
+                   <Download size={18} className="text-indigo-600 mb-2 group-hover:translate-y-0.5 transition-transform" />
+                   <span className="text-[9px] font-black uppercase tracking-widest">Export .sqlite</span>
+                </button>
+                <button 
+                  onClick={() => dbInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 hover:bg-slate-100 transition-all group"
+                >
+                   <Upload size={18} className="text-emerald-600 mb-2 group-hover:-translate-y-0.5 transition-transform" />
+                   <span className="text-[9px] font-black uppercase tracking-widest">Import .sqlite</span>
+                </button>
+                <input type="file" ref={dbInputRef} className="hidden" accept=".sqlite,.db" onChange={handleDbImport} />
+             </div>
+
+             <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start space-x-3">
+                <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-[9px] font-bold text-amber-700 dark:text-amber-500 uppercase leading-relaxed tracking-wide">
+                   Developers: Use "Export" to inspect the database file in external SQLite viewers during development.
+                </p>
+             </div>
+          </div>
+        </div>
+
         {/* Notifications Console */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Notification Channels</h3>
-            <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">Global Control</span>
           </div>
           <div className="grid grid-cols-1 gap-3">
             <NotifToggle label="Bargains & Deals" icon={Tag} active={notifs.bargains} onToggle={() => toggleNotif('bargains')} color="text-amber-500" />

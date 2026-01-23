@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, View, Product, Comment, Story } from './types';
 import { api } from './services/api';
+import { initSQLite } from './services/database';
 import LoginView from './views/LoginView';
 import FeedView from './views/FeedView';
 import ExploreView from './views/ExploreView';
@@ -13,7 +14,6 @@ import UploadView from './views/UploadView';
 import ProfileView from './views/ProfileView';
 import PaymentView from './views/PaymentView';
 import SettingsView from './views/SettingsView';
-import ProductListView from './views/ProductListView';
 import NotificationView from './views/NotificationView';
 import UserProfileView from './views/UserProfileView';
 import WalletView from './views/WalletView';
@@ -74,7 +74,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initData = async () => {
-      // API now handles failover internally to prevent console errors
+      // 1. Initialize Client-Side SQLite engine
+      await initSQLite();
+      
+      // 2. Fetch data (API handles failover to SQLite internally)
       const backendProducts = await api.getProducts();
       setProducts(backendProducts.length > 0 ? backendProducts : DEFAULT_PRODUCTS);
       
@@ -110,7 +113,7 @@ const App: React.FC = () => {
       setCurrentUser(user);
       localStorage.setItem('nexus_user', JSON.stringify(user));
       setCurrentView('FEED');
-      showToast(`Synchronized as ${user.name} ✨`);
+      showToast(`Synchronized via SQLite ✨`);
     }
   };
 
@@ -122,7 +125,7 @@ const App: React.FC = () => {
       setProducts(prev => [newProduct, ...prev]);
     }
     setCurrentView('FEED');
-    showToast("Resource node shared! 🚀");
+    showToast("SQL Node synchronized! 🚀");
   };
 
   const handleAddStory = (newStory: Story) => {
@@ -206,7 +209,7 @@ const App: React.FC = () => {
         </div>
         <h1 className="text-white text-5xl font-[900] italic tracking-tighter mt-10">Nexus</h1>
         <div className="mt-6 flex flex-col items-center space-y-2">
-           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.6em]">Initializing Node</p>
+           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.6em]">Initializing SQL Engine</p>
            <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
               <div className="h-full bg-indigo-500 animate-[loading_2s_ease-in-out_infinite]" />
            </div>

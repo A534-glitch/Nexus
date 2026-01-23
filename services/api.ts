@@ -1,59 +1,83 @@
 
 import { Product, User } from "../types";
+import { execute, query, initSQLite } from "./database";
 
 const API_BASE = "http://localhost:8000/api";
 
 /**
- * LocalMockDB: Mimics the Django Backend behavior in-browser 
- * when the Python server is not reachable.
+ * LocalMockDB: Mimics the Django Backend behavior using client-side SQLite.
  */
 class LocalMockDB {
-  private static STORAGE_KEY = 'nexus_mock_db';
-
-  private static getStore() {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    return data ? JSON.parse(data) : { products: [], users: [] };
+  static async getProducts(): Promise<Product[]> {
+    await initSQLite();
+    const rows = query("SELECT * FROM products ORDER BY created_at DESC");
+    return rows.map((r: any) => ({
+      id: r.id,
+      sellerId: r.seller_id,
+      sellerName: r.seller_name,
+      title: r.title,
+      description: r.description,
+      price: r.price,
+      category: r.category as any,
+      condition: r.condition as any,
+      image: r.image,
+      likes: 0,
+      likedBy: [],
+      shares: 0,
+      comments: []
+    }));
   }
 
-  private static saveStore(store: any) {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(store));
-  }
+  static async addProduct(product: Partial<Product>): Promise<Product> {
+    await initSQLite();
+    const id = `sql_${Date.now()}`;
+    const sellerId = product.sellerId || "999";
+    const sellerName = product.sellerName || "Local User";
 
-  static getProducts(): Product[] {
-    return this.getStore().products;
-  }
+    execute(
+      "INSERT INTO products (id, seller_id, seller_name, title, description, price, category, condition, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        id, 
+        sellerId, 
+        sellerName, 
+        product.title, 
+        product.description, 
+        product.price, 
+        product.category, 
+        product.condition, 
+        product.image
+      ]
+    );
 
-  static addProduct(product: Partial<Product>): Product {
-    const store = this.getStore();
-    const newProd = {
+    return {
       ...product,
-      id: `mock_${Date.now()}`,
-      sellerName: product.sellerName || "Local User",
+      id,
+      sellerName,
       likedBy: [],
       likes: 0,
       shares: 0,
-      comments: [],
-      created_at: new Date().toISOString()
+      comments: []
     } as Product;
-    
-    store.products.unshift(newProd);
-    this.saveStore(store);
-    return newProd;
   }
 
   static mockLogin(username: string): User {
-    return {
-      id: '999',
-      name: username,
-      avatar: `https://picsum.photos/seed/${username}/200`,
-      college: 'Nexus Local Node',
-      isVerified: true
-    };
+    const existing = query("SELECT * FROM users WHERE username = ?", [username]);
+    if (existing.length > 0) {
+      const u = existing[0];
+      return { id: u.id, name: u.username, college: u.college, avatar: u.avatar };
+    }
+
+    const id = `user_${Date.now()}`;
+    const college = 'Nexus Local Node';
+    const avatar = `https://picsum.photos/seed/${username}/200`;
+    
+    execute("INSERT INTO users (id, username, college, avatar) VALUES (?, ?, ?, ?)", [id, username, college, avatar]);
+
+    return { id, name: username, avatar, college, isVerified: true };
   }
 }
 
 export const api = {
-  // Check if backend is alive with a quick timeout
   async isBackendUp(): Promise<boolean> {
     try {
       const controller = new AbortController();
@@ -73,8 +97,8 @@ export const api = {
     const isUp = await this.isBackendUp();
     
     if (!isUp) {
-      console.info("Nexus: 🛰️ Django Backend Offline. Switching to Local Node.");
-      return LocalMockDB.getProducts();
+      console.info("Nexus: 🛰️ Django Backend Offline. Using Client SQLite.");
+      return await LocalMockDB.getProducts();
     }
 
     try {
@@ -89,7 +113,7 @@ export const api = {
         comments: item.comments || []
       }));
     } catch (e) {
-      return LocalMockDB.getProducts();
+      return await LocalMockDB.getProducts();
     }
   },
 
@@ -97,7 +121,7 @@ export const api = {
     const isUp = await this.isBackendUp();
 
     if (!isUp) {
-      return LocalMockDB.addProduct(product);
+      return await LocalMockDB.addProduct(product);
     }
 
     try {
@@ -108,7 +132,7 @@ export const api = {
       });
       return await response.json();
     } catch (e) {
-      return LocalMockDB.addProduct(product);
+      return await LocalMockDB.addProduct(product);
     }
   },
 
